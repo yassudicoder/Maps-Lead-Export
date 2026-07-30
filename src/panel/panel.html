@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maps Lead Export</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="hd">
+        <span class="hd-dot" id="stateDot" aria-hidden="true"></span>
+        <div class="hd-text">
+          <h1 class="hd-title" data-i18n="panelTitle">Maps Lead Export</h1>
+          <p class="hd-status" id="statusLine" role="status" aria-live="polite"></p>
+        </div>
+        <output class="hd-count" id="count" aria-live="off">0</output>
+      </header>
+
+      <div class="banner" id="banner" hidden>
+        <div class="banner-body">
+          <p class="banner-title" id="bannerTitle"></p>
+          <p class="banner-text" id="bannerText"></p>
+        </div>
+        <button type="button" class="btn btn-quiet" id="bannerAction" hidden></button>
+      </div>
+
+      <!-- Full-panel states: shown instead of the list when there is nothing
+           to show yet, or nowhere to collect from. -->
+      <section class="state" id="stateView" hidden>
+        <div class="state-art" id="stateArt" aria-hidden="true"></div>
+        <h2 class="state-title" id="stateTitle"></h2>
+        <p class="state-text" id="stateText"></p>
+        <button type="button" class="btn btn-primary" id="stateAction" hidden></button>
+      </section>
+
+      <main class="list" id="list" hidden tabindex="-1">
+        <div class="list-sizer" id="sizer"></div>
+      </main>
+
+      <footer class="ft">
+        <div class="ft-actions">
+          <button type="button" class="btn btn-primary" id="exportBtn" data-i18n="btnExport">
+            Export CSV
+          </button>
+          <button type="button" class="btn btn-icon" id="pauseBtn" aria-pressed="false">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" id="pauseIcon">
+              <rect x="4" y="3" width="3" height="10" rx="1" fill="currentColor" />
+              <rect x="9" y="3" width="3" height="10" rx="1" fill="currentColor" />
+            </svg>
+          </button>
+          <button type="button" class="btn btn-icon" id="clearBtn">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <path
+                d="M3 4.5h10M6.5 4V2.8h3V4M4.5 4.5l.6 8.2a1 1 0 0 0 1 .8h3.8a1 1 0 0 0 1-.8l.6-8.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Clear is destructive and the session is not recoverable, so it
+             confirms inline rather than behind a modal. -->
+        <div class="confirm" id="confirm" hidden>
+          <p class="confirm-text" id="confirmText"></p>
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-quiet" id="confirmNo" data-i18n="btnClearNo">
+              Keep
+            </button>
+            <button type="button" class="btn btn-danger" id="confirmYes" data-i18n="btnClearYes">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <details class="diag" id="diag">
+          <summary class="diag-summary">
+            <span class="diag-health" id="healthLine"></span>
+            <span class="diag-caret" aria-hidden="true">
+              <svg viewBox="0 0 12 12" width="10" height="10">
+                <path
+                  d="M3 4.5 6 7.5 9 4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </summary>
+          <dl class="diag-grid" id="diagGrid"></dl>
+          <p class="diag-promise" data-i18n="promiseLine"></p>
+        </details>
+      </footer>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    </div>
+
+    <!-- Cloned per visible row by the virtual list. Values are always set with
+         textContent, never markup. -->
+    <template id="rowTemplate">
+      <div class="row">
+        <div class="row-top">
+          <span class="row-name"></span>
+          <span class="row-rating"><span class="star">&#9733;</span><span class="row-rating-val"></span></span>
+        </div>
+        <div class="row-bottom">
+          <span class="row-meta"></span>
+          <span class="pill"></span>
+        </div>
+      </div>
+    </template>
+
+    <script src="../common/constants.js"></script>
+    <script src="../common/text.js"></script>
+    <script src="../common/csv.js"></script>
+    <script src="../common/entitlements.js"></script>
+    <script src="virtual-list.js"></script>
+    <script src="panel.js"></script>
+  </body>
+</html>

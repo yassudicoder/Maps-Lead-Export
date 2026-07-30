@@ -1,0 +1,619 @@
+/*
+ * Side panel styling.
+ *
+ * The panel is narrow (Chrome allows roughly 280-560px) and lives beside a very
+ * busy map, so the visual budget goes on legibility and calm: one accent, a
+ * quiet surface, and typography that stays readable at 320px.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #ffffff;
+  --bg-sunken: #f6f6f8;
+  --surface: #ffffff;
+  --surface-hover: #f4f4f7;
+  --border: #e5e5ea;
+  --border-strong: #d3d3da;
+
+  --text: #17171c;
+  --text-muted: #6a6a76;
+  --text-faint: #9494a0;
+
+  --accent: #4f46e5;
+  --accent-text: #ffffff;
+  --accent-soft: #eef0fe;
+  --accent-border: #c7cbf8;
+
+  /* "No website" is the opportunity signal, so it gets the one warm colour. */
+  --flag: #a1580b;
+  --flag-soft: #fdf3e4;
+  --flag-border: #f0d9b5;
+
+  --danger: #b3261e;
+  --danger-soft: #fdeceb;
+
+  --ok: #1c7a45;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+  --row-height: 64px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17171b;
+    --bg-sunken: #121216;
+    --surface: #1d1d22;
+    --surface-hover: #26262d;
+    --border: #2e2e36;
+    --border-strong: #3c3c46;
+
+    --text: #ececf1;
+    --text-muted: #a2a2ae;
+    --text-faint: #74747f;
+
+    --accent: #7c74f0;
+    --accent-text: #14141a;
+    --accent-soft: #23233a;
+    --accent-border: #3b3b63;
+
+    --flag: #e0a862;
+    --flag-soft: #2c2418;
+    --flag-border: #4a3a22;
+
+    --danger: #ef938c;
+    --danger-soft: #33201f;
+
+    --ok: #6cc48f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Several components below set `display: flex`, which outranks the user-agent
+   rule behind the `hidden` attribute. Without this, hiding them does nothing. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ header */
+
+.hd {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex: none;
+}
+
+.hd-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: none;
+  transition: background-color 160ms ease;
+}
+
+.hd-dot[data-tone="live"] {
+  background: var(--ok);
+  /* A slow pulse reads as "working" without becoming a distraction. */
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.hd-dot[data-tone="warn"] {
+  background: var(--flag);
+}
+.hd-dot[data-tone="idle"] {
+  background: var(--text-faint);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hd-dot[data-tone="live"] {
+    animation: none;
+  }
+}
+
+.hd-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.hd-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hd-status {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hd-count {
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  flex: none;
+}
+
+/* ------------------------------------------------------------------ banner */
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--flag-soft);
+  border-bottom: 1px solid var(--flag-border);
+  flex: none;
+}
+
+.banner[data-tone="accent"] {
+  background: var(--accent-soft);
+  border-bottom-color: var(--accent-border);
+}
+
+.banner-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.banner-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.banner-text {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+/* -------------------------------------------------------------- list + rows */
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Reserve the scrollbar track up front: without it the overlay scrollbar
+     sits on top of the website pill, which is the row's most important word. */
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  position: relative;
+  outline: none;
+}
+
+.list-sizer {
+  position: relative;
+  width: 100%;
+}
+
+.row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--row-height);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  /* Isolate each row so scrolling never triggers a document-wide relayout. */
+  contain: layout paint style;
+}
+
+.row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.row-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 550;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-rating {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.row-rating .star {
+  color: var(--flag);
+}
+
+.row-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-meta {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-meta .faint {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* Website tri-state. The pill is the reason the product exists, so all three
+   values are always visible rather than only the interesting one. */
+.pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 5px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.pill[data-website="has"] {
+  color: var(--text-faint);
+  border-color: var(--border);
+}
+.pill[data-website="has"]::before {
+  background: var(--text-faint);
+}
+
+.pill[data-website="none"] {
+  color: var(--flag);
+  background: var(--flag-soft);
+  border-color: var(--flag-border);
+}
+.pill[data-website="none"]::before {
+  background: var(--flag);
+}
+
+/* Dashed, hollow: unknown should look unresolved, not like a third category. */
+.pill[data-website="unknown"] {
+  color: var(--text-faint);
+  border-color: var(--border-strong);
+  border-style: dashed;
+}
+.pill[data-website="unknown"]::before {
+  background: transparent;
+  border: 1px solid var(--text-faint);
+  width: 6px;
+  height: 6px;
+}
+
+/* ------------------------------------------------------------- empty states */
+
+.state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 28px 40px;
+  text-align: center;
+}
+
+.state-art {
+  color: var(--text-faint);
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+.state-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.state-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+
+.state .btn {
+  margin-top: 10px;
+}
+
+/* ------------------------------------------------------------------ footer */
+
+.ft {
+  flex: none;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunken);
+  padding: 9px 12px 8px;
+}
+
+.ft-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: background-color 110ms ease, border-color 110ms ease, opacity 110ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-primary {
+  flex: 1;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+  color: var(--text-muted);
+}
+
+.btn-icon[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+  padding: 4px 8px;
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.btn-danger {
+  background: var(--danger-soft);
+  border-color: transparent;
+  color: var(--danger);
+  padding: 4px 10px;
+}
+
+/* ----------------------------------------------------------------- confirm */
+
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 7px 8px 7px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.confirm-text {
+  margin: 0;
+  flex: 1;
+  font-size: 11.5px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+/* ------------------------------------------------------------- diagnostics */
+
+.diag {
+  margin-top: 7px;
+}
+
+.diag-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-faint);
+  font-size: 11px;
+  padding: 1px 0;
+}
+
+.diag-summary::-webkit-details-marker {
+  display: none;
+}
+
+.diag-summary:hover {
+  color: var(--text-muted);
+}
+
+.diag-health {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diag-health[data-tone="warn"] {
+  color: var(--flag);
+}
+
+.diag-caret {
+  flex: none;
+  display: inline-flex;
+  transition: transform 140ms ease;
+}
+
+.diag[open] .diag-caret {
+  transform: rotate(180deg);
+}
+
+.diag-grid {
+  margin: 7px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 10px;
+  font-size: 11px;
+}
+
+.diag-grid dt {
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.diag-grid dd {
+  margin: 0;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.diag-promise {
+  margin: 9px 0 1px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--text-faint);
+  border-top: 1px solid var(--border);
+  padding-top: 7px;
+}
+
+/* ------------------------------------------------------------------- toast */
+
+.toast {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 11px;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: center;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+  animation: rise 160ms ease;
+}
+
+.toast[data-tone="error"] {
+  background: var(--danger);
+  color: #fff;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

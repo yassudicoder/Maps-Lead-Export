@@ -1,0 +1,85 @@
+{
+  "appName": {
+    "message": "Maps Lead Export by TheOpenBox",
+    "description": "Extension name shown in Chrome and the Web Store."
+  },
+  "appDesc": {
+    "message": "Export what you see on Google Maps into a clean CSV lead list. Local-first, no ads.",
+    "description": "Extension description."
+  },
+  "actionTitle": {
+    "message": "Maps Lead Export — open the panel",
+    "description": "Toolbar button tooltip."
+  },
+
+  "panelTitle": { "message": "Maps Lead Export" },
+  "panelSubtitleStudio": { "message": "by TheOpenBox" },
+
+  "statusCollecting": { "message": "Collecting as you browse" },
+  "statusConnecting": { "message": "Starting up" },
+  "statusIdle": { "message": "Ready" },
+  "statusPaused": { "message": "Paused" },
+  "statusVerify": { "message": "Verification needed" },
+  "statusReconnect": { "message": "Reconnect needed" },
+  "statusNotMaps": { "message": "Not a Google Maps tab" },
+  "statusSessionFull": { "message": "Session full" },
+  "statusLayoutChanged": { "message": "Maps layout changed" },
+
+  "emptyTitle": { "message": "No leads yet" },
+  "emptyBody": { "message": "Scroll the Maps results list. Every business you see lands here automatically." },
+
+  "notMapsTitle": { "message": "Open Google Maps to start" },
+  "notMapsBody": { "message": "This panel collects the businesses shown in a Google Maps search. Open Maps, search for what you need, then click the toolbar icon." },
+  "notMapsCta": { "message": "Open Google Maps" },
+
+  "reconnectTitle": { "message": "Click the icon to reactivate" },
+  "reconnectBody": { "message": "The panel isn't attached to a Maps tab right now. Open Google Maps and click the Maps Lead Export icon to pick up where you left off. Leads you have already collected are safe." },
+
+  "verifyTitle": { "message": "Google is asking you to verify" },
+  "verifyBody": { "message": "Collecting is paused. Solve the check in the Maps tab yourself, then resume. Browsing more slowly helps avoid this." },
+  "verifyResume": { "message": "Resume collecting" },
+
+  "layoutChangedTitle": { "message": "Maps layout changed — fix incoming" },
+  "layoutChangedBody": { "message": "Only $PERCENT$ of the visible results are parsing correctly, so collection stopped rather than export bad data. Your existing leads are untouched.", "placeholders": { "percent": { "content": "$1", "example": "38%" } } },
+
+  "sessionFullTitle": { "message": "Session full" },
+  "sessionFullBody": { "message": "This session holds $MAX$ leads. Export what you have, then clear the session to keep going.", "placeholders": { "max": { "content": "$1", "example": "2,000" } } },
+
+  "pausedNotice": { "message": "Collection paused. New results will not be added." },
+
+  "btnExport": { "message": "Export CSV" },
+  "btnExporting": { "message": "Exporting…" },
+  "btnPause": { "message": "Pause collecting" },
+  "btnResume": { "message": "Resume collecting" },
+  "btnClear": { "message": "Clear session" },
+  "btnClearConfirm": { "message": "Clear all $COUNT$ leads?", "placeholders": { "count": { "content": "$1", "example": "128" } } },
+  "btnClearYes": { "message": "Clear" },
+  "btnClearNo": { "message": "Keep" },
+
+  "countLeads": { "message": "$COUNT$ leads", "placeholders": { "count": { "content": "$1", "example": "128" } } },
+  "countLeadsOne": { "message": "1 lead" },
+
+  "websiteHas": { "message": "Website" },
+  "websiteNone": { "message": "No website" },
+  "websiteUnknown": { "message": "Website unknown" },
+  "websiteUnknownHint": { "message": "Open this place in Maps to confirm" },
+
+  "noRating": { "message": "No rating" },
+  "noReviews": { "message": "Review count not shown" },
+  "noCategory": { "message": "Category not shown" },
+  "noAddress": { "message": "Address not shown" },
+
+  "healthLabel": { "message": "$PERCENT$ of visible results parsed", "placeholders": { "percent": { "content": "$1", "example": "98%" } } },
+  "healthDetail": { "message": "$PARSED$ of $SEEN$ cards", "placeholders": { "parsed": { "content": "$1", "example": "59" }, "seen": { "content": "$2", "example": "60" } } },
+  "diagnosticsToggle": { "message": "Diagnostics" },
+  "diagSession": { "message": "Session" },
+  "diagQuery": { "message": "Current search" },
+  "diagIdSources": { "message": "ID sources" },
+  "diagNone": { "message": "—" },
+
+  "exportedToast": { "message": "Exported $COUNT$ leads", "placeholders": { "count": { "content": "$1", "example": "128" } } },
+  "exportEmpty": { "message": "Nothing to export yet" },
+  "exportFailed": { "message": "Export failed. Check Chrome's download settings and try again." },
+
+  "promiseLine": { "message": "Collects only what you see. Never runs in the background. Nothing leaves your computer." }
+}

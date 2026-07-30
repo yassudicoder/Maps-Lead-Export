@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-31",
+  "note": "Selector map for the Level-1 (result card) parser. Pure data: strings only, never code. Every list is tried in order, first match wins. Structure and ARIA come first; obfuscated class names appear only as later fallbacks because Google rotates them. Verified against live Google Maps on 2026-07-31 (en-US) across a service-business query and a restaurant query.",
+
+  "feed": {
+    "container": ["div[role=\"feed\"]"],
+    "card": [
+      "div[role=\"article\"]",
+      "div.Nv2PK",
+      ":scope > div:has(a[href*=\"/maps/place/\"])"
+    ],
+    "placeLink": ["a[href*=\"/maps/place/\"]"]
+  },
+
+  "card": {
+    "name": ["div.fontHeadlineSmall", "span.xxVWCe"],
+    "ratingHost": ["span[role=\"img\"][aria-label]"],
+    "ratingText": ["span.MW4etd"],
+    "reviewCountText": ["span.UY7F9"],
+    "infoRows": ["div.W4Efsd div.W4Efsd"],
+    "websiteChip": ["a[data-value=\"Website\"]"],
+    "actionChip": ["a[data-value]", "button[data-value]"],
+    "hidden": ["[aria-hidden=\"true\"]"]
+  },
+
+  "context": {
+    "searchInput": ["input#searchboxinput", "input[name=\"q\"]"]
+  },
+
+  "captcha": {
+    "signals": [
+      "iframe[src*=\"recaptcha\"]",
+      "iframe[src*=\"/sorry/\"]",
+      "form#captcha-form",
+      "div#recaptcha",
+      "div.g-recaptcha"
+    ]
+  }
+}
