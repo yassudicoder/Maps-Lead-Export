@@ -248,6 +248,18 @@ body {
   gap: 3px;
   /* Isolate each row so scrolling never triggers a document-wide relayout. */
   contain: layout paint style;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 90ms ease;
+}
+
+.row:hover {
+  background: var(--surface-hover);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .row-top {

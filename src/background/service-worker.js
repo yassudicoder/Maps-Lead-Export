@@ -320,6 +320,18 @@ function handleCollector(port) {
         broadcastState();
         break;
 
+      case K.MSG.OPEN_RESULT:
+        self.MLE.debugLog.log('relay:' + (msg.ok ? 'dispatched' : msg.reason), {
+          token: msg.token
+        });
+        broadcast({
+          type: K.MSG.OPEN_RESULT,
+          ok: msg.ok,
+          reason: msg.reason,
+          token: msg.token
+        });
+        break;
+
       case K.MSG.CAPTCHA:
         runtime.captcha = !!msg.present;
         broadcastState();
@@ -391,6 +403,44 @@ function handlePanel(port) {
           broadcast({ type: K.MSG.SNAPSHOT, rows: [], state: stateSnapshot() });
         });
         break;
+
+      /**
+       * Relay one row-click to the tab (E1 ruling). The worker forwards and
+       * does not originate: it never synthesises a gesture, never retries, and
+       * never sends a second one on its own. The collector re-checks freshness
+       * and the single-in-flight rule for itself.
+       */
+      case K.MSG.OPEN_ROW: {
+        const collector = collectors.values().next().value;
+        if (!collector) {
+          try {
+            port.postMessage({
+              type: K.MSG.OPEN_RESULT,
+              ok: false,
+              reason: 'disconnected',
+              token: msg.token
+            });
+          } catch (_) {
+            panels.delete(port);
+          }
+          break;
+        }
+        self.MLE.debugLog.log('relay:request', {
+          aliases: msg.aliases || [],
+          token: msg.token
+        });
+        try {
+          collector.postMessage({
+            type: K.MSG.OPEN_ROW,
+            aliases: msg.aliases || [],
+            token: msg.token,
+            gestureAt: msg.gestureAt
+          });
+        } catch (_) {
+          /* tab closing; the panel will see the disconnect */
+        }
+        break;
+      }
 
       case K.MSG.NOTE_EXPORT:
         self.MLE.debugLog.log('export', { rows: msg.count || 0 });

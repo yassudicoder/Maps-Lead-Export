@@ -44,6 +44,9 @@
       // service worker -> collector
       INIT: 'init',
       SET_PAUSED: 'setPaused',
+      OPEN_ROW: 'openRow',
+      // collector -> service worker -> panel
+      OPEN_RESULT: 'openResult',
       // collector -> service worker
       HELLO: 'hello',
       ROWS: 'rows',
@@ -97,8 +100,28 @@
      * These are re-read attempts on the pane they already opened; they stop at
      * the first successful read. Nothing here opens anything, and nothing
      * advances to another place — see red line 8.
+     *
+     * Measured: a place pane opened from the results list showed nothing at
+     * +1.5s and was fully rendered by +3s. Detection can itself lag by up to
+     * FEED_RECHECK_MS, so the ladder runs past 7s to leave real margin on a
+     * slow connection. Stopping at 3.2s would have been a coin flip.
      */
-    DETAIL_READ_DELAYS_MS: [0, 350, 900, 1800, 3200],
+    DETAIL_READ_DELAYS_MS: [0, 350, 900, 1800, 3200, 5000, 7000],
+
+    /**
+     * A relayed row-click must be the direct consequence of a fresh gesture on
+     * our own UI (red line 8, E1 ruling). The panel stamps the click and the
+     * collector refuses anything older, so a request can never be replayed or
+     * queued into something that resembles automation.
+     */
+    RELAY_GESTURE_MAX_AGE_MS: 5000,
+
+    /**
+     * How long one relay may hold the "in flight" lock before it is released.
+     * The lock is what enforces "gated on the prior pane finishing"; this only
+     * stops a pane that never arrives from wedging it shut.
+     */
+    RELAY_TIMEOUT_MS: 12000,
 
     /** Consecutive bad-health scans before we call the layout broken. */
     HEALTH_STRIKES: 2,

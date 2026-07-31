@@ -148,6 +148,18 @@ Verification claims about this codebase follow [VERIFICATION.md](docs/VERIFICATI
 they name the pushed commit, the flow (SPA click vs hard load) and the locale,
 and milestone gates come from Yash's machine.
 
+## Tests
+
+```
+node test/unit.js               # parsing, CSV rules, merge semantics
+node test/migration.js          # pre-M2 sessions repaired on load
+node test/collector-lifecycle.js  # start-up, teardown, relay refusals
+```
+
+No dependencies and no runner — they are plain Node scripts that exit non-zero
+on failure. They are development instruments, not a milestone gate; see
+[VERIFICATION.md](docs/VERIFICATION.md).
+
 ## Conventions
 
 Vanilla JS, no build step, no frameworks, no vendored libraries. Every file is an

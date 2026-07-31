@@ -101,6 +101,30 @@ regression and the alias-matching path. Extension loads unpacked, selector map
 with the new `detail` section validates inside the real worker, panel renders
 240 rows in 9 DOM nodes, **zero console errors**, 0 untranslated strings.
 
+## Row-click enrichment (E1 approved, implemented)
+
+Yash resolved E1 on 2026-07-31: synthetic activation of the result card's
+existing link is approved, `chrome.tabs.update` is rejected, and an unrendered
+card must produce a hint rather than a scroll. Red line 2 is amended in
+[RED-LINES.md](RED-LINES.md).
+
+Clicking a row in the panel now relays that one gesture to the matching card's
+link. Measured: the document survives (so the collector and the activeTab grant
+persist) and the pane renders by ~3s. The three constraints — fresh gesture,
+one in flight, rendered cards only — are enforced in `relayOpen` and covered by
+`test/collector-lifecycle.js`.
+
+Refusals are visible rather than silent: "isn't on screen in Maps", "still
+reading the last place", "that click expired". Success is announced by the row
+filling in, which is the point.
+
+## `enriched_at`
+
+Added per the gate ruling. ISO, populated only on rows the detail pane has been
+read for, blank on Level-1 rows. 18 columns now. It separates "seen in a list"
+from "confirmed at source" and dates the confirmation, so a list that has been
+sitting for a month can be re-checked selectively.
+
 ## Red lines
 
 Red lines 7 and 8 were added mid-build and are recorded in

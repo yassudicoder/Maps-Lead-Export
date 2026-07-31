@@ -80,6 +80,14 @@
   "rowStatusPartialHint": { "message": "Read from the place page, but these were not shown: $FIELDS$", "placeholders": { "fields": { "content": "$1", "example": "phone, plusCode" } } },
   "rowStatusNeverHint": { "message": "Open this place in Maps to fill in website, phone and full address" },
   "rowStatusOkHint": { "message": "Read from the place's own page" },
+  "rowOpenHint": { "message": "Click to open this place in Maps and fill in the rest" },
+
+  "openNotRendered": { "message": "That one isn't on screen in Maps. Scroll to it there, then click again." },
+  "openBusy": { "message": "Still reading the last place — try again in a moment." },
+  "openStale": { "message": "That click expired. Click the row again." },
+  "openTimeout": { "message": "Maps didn't open that place. Try again." },
+  "openDisconnected": { "message": "Click the toolbar icon on your Maps tab first." },
+  "openFailed": { "message": "Could not open that place." },
 
   "noRating": { "message": "No rating" },
   "noReviews": { "message": "Review count not shown" },

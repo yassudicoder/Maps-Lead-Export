@@ -41,6 +41,12 @@
     { key: 'id_source', header: 'id_source', get: (r) => r.idSource },
     { key: 'source_query', header: 'source_query', get: (r) => r.query },
     { key: 'collected_at', header: 'collected_at', get: (r) => toIso(r.collectedAt) },
+    /**
+     * When the place's own page was read. Blank on Level-1 rows, which is the
+     * point: it separates "seen in a list" from "confirmed at source", and
+     * dates the confirmation so a stale list can be re-checked.
+     */
+    { key: 'enriched_at', header: 'enriched_at', get: (r) => toIso(r.enrichedAt) },
     { key: 'data_level', header: 'data_level', get: (r) => String(r.level || 1) }
   ];
 

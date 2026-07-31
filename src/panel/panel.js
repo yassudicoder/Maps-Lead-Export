@@ -590,6 +590,56 @@
   el.copyDiag.addEventListener('click', copyDiagnostics);
 
   /**
+   * Row click -> open that place in Maps (E1 ruling).
+   *
+   * This is the gesture the collector relays 1:1 to the card's own link. The
+   * panel originates nothing on its own: there is no queue, no "open all", and
+   * no follow-up request after a result comes back. One human click, one relay.
+   */
+  let openToken = 0;
+
+  function requestOpen(row) {
+    const aliases = [row.placeId, row.ftid, row.mid].filter(Boolean);
+    if (!aliases.length) return;
+    openToken += 1;
+    send({
+      type: K.MSG.OPEN_ROW,
+      aliases: aliases,
+      token: String(openToken),
+      // Stamped here, at the gesture, so the collector can refuse anything
+      // that is not the direct consequence of this click.
+      gestureAt: Date.now()
+    });
+  }
+
+  function rowFromEvent(event) {
+    const node = event.target && event.target.closest ? event.target.closest('.row') : null;
+    if (!node || node.__index == null || node.__index < 0) return null;
+    return rows[node.__index] || null;
+  }
+
+  el.list.addEventListener('click', function (event) {
+    const row = rowFromEvent(event);
+    if (row) requestOpen(row);
+  });
+
+  el.list.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const row = rowFromEvent(event);
+    if (!row) return;
+    event.preventDefault();
+    requestOpen(row);
+  });
+
+  const OPEN_FAILURE = {
+    'not-rendered': 'openNotRendered',
+    busy: 'openBusy',
+    'stale-gesture': 'openStale',
+    timeout: 'openTimeout',
+    disconnected: 'openDisconnected'
+  };
+
+  /**
    * Hand the user a self-contained report they can paste into an issue.
    *
    * Local only: it goes to their clipboard and nowhere else. Nothing is
@@ -643,6 +693,12 @@
       } else if (message.type === K.MSG.STATE) {
         state = message.state || state;
         render();
+      } else if (message.type === K.MSG.OPEN_RESULT) {
+        // Success needs no announcement — the row fills in, which is the point.
+        // A refusal has to say which of the three constraints stopped it.
+        if (!message.ok) {
+          toast(msg(OPEN_FAILURE[message.reason] || 'openFailed'), 'error');
+        }
       } else if (message.type === K.MSG.DEBUG_REPORT) {
         const deliver = pendingReport;
         pendingReport = null;

@@ -45,6 +45,9 @@
   /** Level-2: the URL we last reacted to, and the pending hydration re-reads. */
   let lastUrl = '';
   let detailTimers = [];
+  /** The one relayed row-click currently allowed to be outstanding, if any. */
+  let relayInFlight = null;
+  let relayTimer = 0;
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -192,6 +195,15 @@
     detailTimers = [];
   }
 
+  /** Free the single-relay lock. Nothing here starts another one. */
+  function releaseRelay() {
+    if (relayTimer) {
+      clearTimeout(relayTimer);
+      relayTimer = 0;
+    }
+    relayInFlight = null;
+  }
+
   function scheduleDetailReads() {
     const openedUrl = location.href;
     const delays = K.DETAIL_READ_DELAYS_MS;
@@ -212,6 +224,9 @@
           if (!result) return; // not hydrated yet; a later attempt will catch it
 
           clearDetailTimers();
+          // The pane has finished. That, and only that, releases the relay lock
+          // — red line 8's "gated on the prior pane finishing".
+          releaseRelay();
           post({
             type: K.MSG.DETAIL,
             aliases: result.aliases,
@@ -221,6 +236,73 @@
         }, delays[i])
       );
     }
+  }
+
+  /* -------------------------------------------------------------- relay (E1) */
+
+  /**
+   * Relay one panel row-click to the matching card's own link.
+   *
+   * Permitted by the E1 ruling: red line 2 bars machine-initiated clicks, and
+   * this is the direct 1:1 relay of a fresh human gesture on our UI. The three
+   * constraints below are what keep it that way, and each is enforced here
+   * rather than assumed.
+   */
+  function relayOpen(msg) {
+    // 1. The gesture must be fresh. A stale request cannot be replayed.
+    const age = Date.now() - (msg.gestureAt || 0);
+    if (!msg.gestureAt || age > K.RELAY_GESTURE_MAX_AGE_MS || age < -1000) {
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'stale-gesture', token: msg.token });
+      return;
+    }
+
+    // 2. One at a time, gated on the previous pane finishing.
+    if (relayInFlight) {
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'busy', token: msg.token });
+      return;
+    }
+
+    // 3. Only cards Maps has already drawn. We never scroll to find one.
+    const anchor = findRenderedCard(msg.aliases || []);
+    if (!anchor) {
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'not-rendered', token: msg.token });
+      return;
+    }
+
+    relayInFlight = { token: msg.token, at: Date.now() };
+    if (relayTimer) clearTimeout(relayTimer);
+    relayTimer = setTimeout(function () {
+      // The pane never arrived; release the lock rather than wedging it shut.
+      relayInFlight = null;
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'timeout', token: msg.token });
+    }, K.RELAY_TIMEOUT_MS);
+
+    post({ type: K.MSG.OPEN_RESULT, ok: true, token: msg.token });
+    anchor.click();
+  }
+
+  /**
+   * Find the currently rendered card matching any of these identifiers.
+   *
+   * Reads only what is on screen. If the user has scrolled the card out of the
+   * feed there is no match and the panel says so — hunting for it by scrolling
+   * is exactly what the boundary in the E1 ruling forbids.
+   */
+  function findRenderedCard(aliases) {
+    if (!feed || !feed.isConnected || !aliases.length) return null;
+    const cards = MLE.parserL1.pickAll(feed, selectors.feed.card);
+
+    for (let i = 0; i < cards.length; i += 1) {
+      const link = MLE.parserL1.pick(cards[i], selectors.feed.placeLink);
+      if (!link) continue;
+      const href = link.href || link.getAttribute('href') || '';
+      const ids = MLE.placeId.extractIdentifiers(href, '');
+      for (let j = 0; j < aliases.length; j += 1) {
+        const a = aliases[j];
+        if (a && (a === ids.placeId || a === ids.ftid || a === ids.mid)) return link;
+      }
+    }
+    return null;
   }
 
   /** Cheap URL-change check, run from the existing recheck tick. */
@@ -317,6 +399,10 @@
       post({ type: K.MSG.CONTEXT, query: readQuery(), url: location.href });
       return;
     }
+    if (msg.type === K.MSG.OPEN_ROW) {
+      relayOpen(msg);
+      return;
+    }
     if (msg.type === K.MSG.SET_PAUSED) {
       paused = !!msg.paused;
       if (paused) {
@@ -331,7 +417,11 @@
 
   function teardown() {
     if (stopped) return;
- 
+    stopped = true;
+    detachFeed();
+    clearDetailTimers();
+    releaseRelay();
+    if (recheckTimer) clearInterval(recheckTimer);
     if (rescanTimer) clearTimeout(rescanTimer);
     if (flushTimer) clearTimeout(flushTimer);
     try {
