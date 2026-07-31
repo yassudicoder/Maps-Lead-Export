@@ -121,6 +121,8 @@ global.chrome = {
 };
 
 const path = require('node:path');
+require(path.join(__dirname, '..', 'src', 'common', 'debug-log.js'));
+require(path.join(__dirname, '..', 'src', 'common', 'place-id.js'));
 require(path.join(__dirname, '..', 'src', 'content', 'parser-level1.js'));
 require(path.join(__dirname, '..', 'src', 'background', 'session-store.js'));
 const L1 = global.MLE.parserL1;

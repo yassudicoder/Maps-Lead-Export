@@ -66,84 +66,16 @@
    * whose id came from coordinates is a weaker dedupe key than one with a real
    * place id, and `idSource` says which you got.
    */
-  const ID_RULES = [
-    { source: 'place_id', key: 'placeIdRaw', re: /!19s([A-Za-z0-9_-]{10,})/ },
-    { source: 'ftid', key: 'ftid', re: /!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i },
-    { source: 'mid', key: 'mid', re: /!16s([^!?&]+)/ }
-  ];
-
   /**
-   * Extract EVERY identifier the href carries, not just the best one.
-   *
-   * The primary key is still the strongest available, in the order above. But a
-   * place detail URL does not carry the same set as a result card: opening a
-   * place rewrites the URL to one containing !1s and !16s but NO !19s. Keeping
-   * only the winner therefore makes an opened place unmatchable against the row
-   * it came from, which is the whole basis of Level-2 enrichment.
-   *
-   * So every id found is retained as an alias, and matching tries them all.
+   * Identifier extraction lives in common/place-id.js: the service worker needs
+   * the same logic to repair rows that were persisted before Level-2 existed.
    */
-  function extractIdentifiers(href, name) {
-    const out = { placeId: null, idSource: null, ftid: null, mid: null, geo: null };
-
-    if (href) {
-      for (let i = 0; i < ID_RULES.length; i += 1) {
-        const rule = ID_RULES[i];
-        const m = href.match(rule.re);
-        if (!m || !m[1]) continue;
-
-        let value = m[1];
-        if (rule.source === 'mid') {
-          try {
-            value = decodeURIComponent(value);
-          } catch (_) {
-            /* keep the raw form */
-          }
-          // A bare "/g/" or "/m/" prefix with nothing after it is not an id.
-          if (!/^\/[gm]\/\w+/.test(value)) continue;
-        }
-
-        if (rule.source === 'ftid') out.ftid = value;
-        else if (rule.source === 'mid') out.mid = value;
-
-        // First rule to match sets the primary key; later ones only add aliases.
-        if (!out.placeId) {
-          out.placeId = value;
-          out.idSource = rule.source;
-        }
-      }
-
-      const coords = href.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
-      if (coords) {
-        out.geo = coords[1] + ',' + coords[2];
-        if (!out.placeId) {
-          out.placeId = 'geo:' + out.geo;
-          out.idSource = 'coords';
-        }
-      }
-    }
-
-    if (!out.placeId) {
-      const slug = T.slug(name, 80);
-      if (slug) {
-        out.placeId = 'name:' + slug;
-        out.idSource = 'name';
-      }
-    }
-    return out;
-  }
-
-  /**
-   * Every key this row can be recognised by, strongest first. Used to match a
-   * detail pane back to a collected row.
-   */
-  function aliasesOf(row) {
-    const out = [];
-    if (row.placeId) out.push(row.placeId);
-    if (row.ftid && out.indexOf(row.ftid) === -1) out.push(row.ftid);
-    if (row.mid && out.indexOf(row.mid) === -1) out.push(row.mid);
-    return out;
-  }
+  const extractIdentifiers = function (href, name) {
+    return MLE.placeId.extractIdentifiers(href, name);
+  };
+  const aliasesOf = function (row) {
+    return MLE.placeId.aliasesOf(row);
+  };
 
   /** Strip the tracking query string; the data segment lives in the path. */
   function cleanPlaceUrl(href) {

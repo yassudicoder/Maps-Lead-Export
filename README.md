@@ -132,6 +132,22 @@ Excel evaluates a cell starting `+` as a formula and renders `#NAME?`, and CSV
 quoting does not exempt it. Indian numbers as Maps returns them (`072089 35965`)
 start with a digit and are untouched.
 
+## Diagnosing a problem
+
+Open **Diagnostics** at the foot of the panel. It shows live parse health, and
+**Copy diagnostics** puts a self-contained report on your clipboard: the last
+200 events in the collect → match → enrich chain, plus the extension version and
+UI locale. It stays local — nothing is transmitted, and it holds identifiers and
+counts rather than row content.
+
+Each row also carries an enrichment chip once enrichment has started:
+`not opened`, `confirmed`, or `partial` with the fields the place page did not
+show.
+
+Verification claims about this codebase follow [VERIFICATION.md](docs/VERIFICATION.md):
+they name the pushed commit, the flow (SPA click vs hard load) and the locale,
+and milestone gates come from Yash's machine.
+
 ## Conventions
 
 Vanilla JS, no build step, no frameworks, no vendored libraries. Every file is an

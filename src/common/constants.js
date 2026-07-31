@@ -58,7 +58,8 @@
       STATE: 'state',
       CLEAR: 'clear',
       TOGGLE_PAUSE: 'togglePause',
-      NOTE_EXPORT: 'noteExport'
+      NOTE_EXPORT: 'noteExport',
+      DEBUG_REPORT: 'debugReport'
     }),
 
     STORAGE: Object.freeze({

@@ -12,6 +12,8 @@
 importScripts(
   '../common/constants.js',
   '../common/text.js',
+  '../common/debug-log.js',
+  '../common/place-id.js',
   '../common/selector-schema.js',
   '../common/entitlements.js',
   './session-store.js'
@@ -122,6 +124,7 @@ function broadcastState() {
 const CONTENT_FILES = [
   'src/common/constants.js',
   'src/common/text.js',
+  'src/common/place-id.js',
   'src/common/selector-schema.js',
   'src/content/parser-level1.js',
   'src/content/parser-level2.js',
@@ -286,10 +289,17 @@ function handleCollector(port) {
         break;
 
       case K.MSG.DETAIL:
+        self.MLE.debugLog.log('detail:received', {
+          aliases: msg.aliases || [],
+          name: msg.name || '',
+          fields: Object.keys(msg.patch || {})
+        });
         store.load().then(function () {
           const row = store.applyDetail(msg.aliases || [], msg.patch || {});
           if (!row) {
-            // The user opened a place we never collected — nothing to enrich.
+            // The user opened a place we never collected, or the row predates
+            // aliasing. Either way the store has already logged why.
+            broadcastState();
             return;
           }
           broadcast({
@@ -383,7 +393,29 @@ function handlePanel(port) {
         break;
 
       case K.MSG.NOTE_EXPORT:
+        self.MLE.debugLog.log('export', { rows: msg.count || 0 });
         noteExport(msg.count || 0);
+        break;
+
+      case K.MSG.DEBUG_REPORT:
+        store.load().then(function () {
+          try {
+            port.postMessage({
+              type: K.MSG.DEBUG_REPORT,
+              report: self.MLE.debugLog.report({
+                rowsHeld: store.size(),
+                unresolved: store.unresolvedCount(),
+                query: store.query(),
+                state: resolveState(),
+                collectorsConnected: collectors.size,
+                selectorsLoaded: !!selectorMap,
+                droppedSelectors: runtime.droppedSelectors
+              })
+            });
+          } catch (_) {
+            panels.delete(port);
+          }
+        });
         break;
 
       default:

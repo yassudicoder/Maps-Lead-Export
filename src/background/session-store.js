@@ -39,6 +39,7 @@
             if (row && row.placeId) rows.set(row.placeId, row);
           }
           query = saved.query || '';
+          migrateAliases();
           reindex();
         }
         resolve();
@@ -185,12 +186,38 @@
    *
    * @returns {object|null} the updated row, or null if no row matched.
    */
+  /** Detail fields we expect a fully-rendered pane to yield. */
+  const EXPECTED_DETAIL = ['phone', 'fullAddress', 'plusCode'];
+
+  function missingFrom(patch) {
+    const missing = EXPECTED_DETAIL.filter(function (f) {
+      return !patch[f];
+    });
+    // A website URL is only expected when the pane said there is one.
+    if (patch.website === K.WEBSITE.HAS && !patch.websiteUrl) missing.push('websiteUrl');
+    return missing;
+  }
+
   function applyDetail(aliases, patch) {
     let row = null;
+    let matchedOn = null;
     for (let i = 0; i < aliases.length && !row; i += 1) {
       row = rows.get(aliases[i]) || resolve(aliases[i]);
+      if (row) matchedOn = aliases[i];
     }
-    if (!row) return null;
+
+    if (!row) {
+      // The single most useful line in the log: a pane parsed fine and still
+      // changed nothing, with the aliases tried and how many were indexed.
+      if (MLE.debugLog) {
+        MLE.debugLog.log('detail:unmatched', {
+          aliases: aliases,
+          rowsHeld: rows.size,
+          aliasesIndexed: aliasIndex.size
+        });
+      }
+      return null;
+    }
 
     const merged = Object.assign({}, row);
     const provenance = Object.assign({}, row.provenance || {});
@@ -212,14 +239,73 @@
       touched = true;
     });
 
-    if (!touched) return null;
+    const missing = missingFrom(patch);
     merged.provenance = provenance;
     merged.level = 2;
     merged.enrichedAt = Date.now();
+    // Per-row status the panel renders as a chip, so a partial read is visible
+    // rather than looking identical to a clean one.
+    merged.enrich = {
+      state: missing.length ? 'partial' : 'ok',
+      missing: missing,
+      at: merged.enrichedAt
+    };
     rows.set(merged.placeId, merged);
     index(merged);
     schedulePersist();
+
+    if (MLE.debugLog) {
+      MLE.debugLog.log(missing.length ? 'detail:parse-miss' : 'detail:ok', {
+        placeId: merged.placeId,
+        matchedOn: matchedOn,
+        website: merged.website,
+        missing: missing,
+        changed: touched
+      });
+    }
     return merged;
+  }
+
+  /**
+   * Backfill aliases onto rows collected before Level-2 existed.
+   *
+   * Rows persisted by M1 carry only `placeId`. Their `placeUrl` still contains
+   * the full `/data=!...` segment, so ftid and mid are recoverable without
+   * touching the network and without discarding the user's session.
+   *
+   * Skipping this is not a cosmetic problem: an un-aliased row can never be
+   * matched to an opened place, so enrichment silently does nothing on every
+   * session that predates the upgrade — which is exactly how it failed in the
+   * field, with no error anywhere to explain it.
+   */
+  function migrateAliases() {
+    if (!MLE.placeId) return;
+    let repaired = 0;
+    let unrepairable = 0;
+
+    rows.forEach(function (row) {
+      if (row.ftid || row.mid) return;
+      const ids = MLE.placeId.extractIdentifiers(row.placeUrl || '', row.name);
+      if (!ids.ftid && !ids.mid) {
+        unrepairable += 1;
+        return;
+      }
+      if (ids.ftid) row.ftid = ids.ftid;
+      if (ids.mid) row.mid = ids.mid;
+      if (ids.geo && !row.geo) row.geo = ids.geo;
+      repaired += 1;
+    });
+
+    if (repaired || unrepairable) {
+      if (MLE.debugLog) {
+        MLE.debugLog.log('migrate:aliases', {
+          repaired: repaired,
+          unrepairable: unrepairable,
+          total: rows.size
+        });
+      }
+      if (repaired) schedulePersist();
+    }
   }
 
   /** alias -> primary placeId, so a detail pane finds its row. */

@@ -72,7 +72,19 @@ calling that `none` would be exactly the false negative the tri-state exists to
 prevent. Address alone is not a usable hydration signal: service-area businesses
 legitimately have none.
 
-## Verified
+## Correction (2026-07-31)
+
+**The verification below was flow-invalid and the feature failed in the field.**
+It was produced with `page.goto(placeURL)` — a hard load — against a session
+created seconds earlier by the current code. Yash reaches a place by clicking a
+card, which is a pushState SPA navigation, and his session predates M2.
+
+Rows written by M1 carry no `ftid`/`mid`, so they matched no detail pane and
+enrichment silently did nothing. Cause, fix and the instrumentation added are in
+[VERIFICATION.md](VERIFICATION.md). The parser results below are still accurate
+for what they measured; they simply did not measure the thing that mattered.
+
+## Verified (hard load, en-US — see correction above)
 
 Level-2 parser run against live Maps on the user's own three places:
 

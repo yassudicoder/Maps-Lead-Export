@@ -20,7 +20,7 @@
     'resolve', 'resolveDot', 'resolveText',
     'exportBtn', 'pauseBtn', 'pauseIcon', 'clearBtn',
     'confirm', 'confirmText', 'confirmNo', 'confirmYes',
-    'diag', 'healthLine', 'diagGrid',
+    'diag', 'healthLine', 'diagGrid', 'copyDiag',
     'toast', 'rowTemplate'
   ].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -132,6 +132,27 @@
       site.textContent = '';
       site.title = '';
     }
+
+    // Enrichment status, so a partial read never looks like a clean one and
+    // "nothing happened" is visible rather than inferred.
+    const status = node.querySelector('.row-status');
+    const enrich = row.enrich;
+    // Before anything is enriched the third line is not drawn at all, and a
+    // wall of "not opened" would be noise rather than signal.
+    status.hidden = !contactMode;
+    if (!enrich) {
+      status.dataset.state = 'never';
+      status.textContent = msg('rowStatusNever');
+      status.title = msg('rowStatusNeverHint');
+    } else if (enrich.state === 'partial') {
+      status.dataset.state = 'partial';
+      status.textContent = msg('rowStatusPartial');
+      status.title = msg('rowStatusPartialHint', [(enrich.missing || []).join(', ')]);
+    } else {
+      status.dataset.state = 'ok';
+      status.textContent = msg('rowStatusOk');
+      status.title = msg('rowStatusOkHint');
+    }
   }
 
   /** "https://www.lovenlatte.com/" -> "lovenlatte.com" */
@@ -145,16 +166,20 @@
 
   const ROW_HEIGHT_PLAIN = 64;
   const ROW_HEIGHT_CONTACT = 82;
+  /** True once the session has anything to show on the third line. */
+  let contactMode = false;
 
   /**
    * Rows grow a contact line the moment the session has any contact data to
    * show, and every row shares that height so windowing stays arithmetic.
    */
   function syncRowHeight() {
-    const hasContact = rows.some(function (r) {
-      return r.phone || r.websiteUrl;
+    // Enrichment counts even when it yielded nothing: a place the user opened
+    // that produced no phone still needs somewhere to say so.
+    contactMode = rows.some(function (r) {
+      return r.phone || r.websiteUrl || r.enrich;
     });
-    list.setRowHeight(hasContact ? ROW_HEIGHT_CONTACT : ROW_HEIGHT_PLAIN);
+    list.setRowHeight(contactMode ? ROW_HEIGHT_CONTACT : ROW_HEIGHT_PLAIN);
   }
 
   function setRows(next) {
@@ -562,6 +587,39 @@
   el.diag.addEventListener('toggle', function () {
     if (el.diag.open) renderDiagnostics(state, rows.length);
   });
+  el.copyDiag.addEventListener('click', copyDiagnostics);
+
+  /**
+   * Hand the user a self-contained report they can paste into an issue.
+   *
+   * Local only: it goes to their clipboard and nowhere else. Nothing is
+   * uploaded, and the buffer holds identifiers and counts rather than rows.
+   */
+  let pendingReport = null;
+
+  function copyDiagnostics() {
+    pendingReport = function (report) {
+      const text = JSON.stringify(report, null, 2);
+      navigator.clipboard.writeText(text).then(
+        function () {
+          toast(msg('diagCopied'));
+        },
+        function () {
+          console.log('[MapsLeadExport] diagnostics:\n' + text);
+          toast(msg('diagCopyFailed'), 'error');
+        }
+      );
+    };
+    send({ type: K.MSG.DEBUG_REPORT });
+  }
+
+  // Escape hatch for when the clipboard is blocked: callable from the console.
+  root.mleDiagnostics = function () {
+    return new Promise(function (resolve) {
+      pendingReport = resolve;
+      send({ type: K.MSG.DEBUG_REPORT });
+    });
+  };
 
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && !el.confirm.hidden) closeConfirm();
@@ -585,6 +643,10 @@
       } else if (message.type === K.MSG.STATE) {
         state = message.state || state;
         render();
+      } else if (message.type === K.MSG.DEBUG_REPORT) {
+        const deliver = pendingReport;
+        pendingReport = null;
+        if (deliver) deliver(message.report);
       }
     });
 

@@ -379,6 +379,31 @@ body {
   text-overflow: ellipsis;
 }
 
+/* Per-row enrichment status. Quiet by default; only "partial" earns colour,
+   because a partial read is the one state that silently looks like success. */
+.row-status {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  color: var(--text-faint);
+}
+
+.row-status[data-state="ok"] {
+  color: var(--ok);
+}
+
+.row-status[data-state="partial"] {
+  color: var(--flag);
+  font-weight: 600;
+}
+
+.diag-copy {
+  margin-top: 8px;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+}
+
 /* A confirmed value is stated plainly; an inferred one stays hedged. */
 .pill[data-source="detail"] {
   border-style: solid;

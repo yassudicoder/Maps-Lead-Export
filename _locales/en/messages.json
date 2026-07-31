@@ -70,6 +70,16 @@
   "unresolvedSome": { "message": "$COUNT$ still to confirm", "placeholders": { "count": { "content": "$1", "example": "13" } } },
   "unresolvedHow": { "message": "Open a place in Maps and its website, phone and full address fill in here automatically." },
   "diagEnriched": { "message": "Confirmed" },
+  "btnCopyDiag": { "message": "Copy diagnostics" },
+  "diagCopied": { "message": "Diagnostics copied to the clipboard" },
+  "diagCopyFailed": { "message": "Could not copy. Open the panel's console and run copy(await mleDiagnostics())." },
+
+  "rowStatusNever": { "message": "not opened" },
+  "rowStatusOk": { "message": "confirmed" },
+  "rowStatusPartial": { "message": "partial" },
+  "rowStatusPartialHint": { "message": "Read from the place page, but these were not shown: $FIELDS$", "placeholders": { "fields": { "content": "$1", "example": "phone, plusCode" } } },
+  "rowStatusNeverHint": { "message": "Open this place in Maps to fill in website, phone and full address" },
+  "rowStatusOkHint": { "message": "Read from the place's own page" },
 
   "noRating": { "message": "No rating" },
   "noReviews": { "message": "Review count not shown" },
