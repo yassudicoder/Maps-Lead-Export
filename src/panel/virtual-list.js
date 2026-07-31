@@ -25,7 +25,7 @@
   function VirtualList(options) {
     const container = options.container;
     const sizer = options.sizer;
-    const rowHeight = options.rowHeight;
+    let rowHeight = options.rowHeight;
     const overscan = options.overscan || 4;
 
     let items = [];
@@ -107,6 +107,20 @@
       },
       /** Re-render mounted rows in place, e.g. after rows were updated. */
       refresh: function () {
+        forceRender = true;
+        schedule();
+      },
+      /**
+       * Change the height every row is drawn at.
+       *
+       * Rows stay uniform, which is what keeps windowing to arithmetic instead
+       * of measurement. The list switches height once, when the session first
+       * gains contact details worth a third line.
+       */
+      setRowHeight: function (next) {
+        if (!next || next === rowHeight) return;
+        rowHeight = next;
+        container.style.setProperty('--row-height', next + 'px');
         forceRender = true;
         schedule();
       },

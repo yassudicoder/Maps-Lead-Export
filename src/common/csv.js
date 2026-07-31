@@ -18,8 +18,24 @@
     { key: 'category', header: 'category', get: (r) => r.category },
     { key: 'rating', header: 'rating', get: (r) => (r.rating == null ? '' : String(r.rating)) },
     { key: 'reviews', header: 'reviews', get: (r) => (r.reviewCount == null ? '' : String(r.reviewCount)) },
-    { key: 'address_line', header: 'address_line', get: (r) => r.addressLine },
+    // Contact first: this is the half of the row an outreach list is actually
+    // worked from, and it only exists once a place has been enriched.
+    { key: 'phone', header: 'phone', get: (r) => r.phone || '' },
     { key: 'website_status', header: 'website_status', get: (r) => r.website },
+    { key: 'website_url', header: 'website_url', get: (r) => r.websiteUrl || '' },
+    /**
+     * Whether website_status came from the result card or from the place's own
+     * detail pane. "none" from a card is an inference; "none" from a detail pane
+     * is proof. A pitch list is only as good as knowing which one you have.
+     */
+    {
+      key: 'website_source',
+      header: 'website_source',
+      get: (r) => (r.provenance && r.provenance.website) || ''
+    },
+    { key: 'address_line', header: 'address_line', get: (r) => r.addressLine },
+    { key: 'full_address', header: 'full_address', get: (r) => r.fullAddress || '' },
+    { key: 'plus_code', header: 'plus_code', get: (r) => r.plusCode || '' },
     { key: 'place_url', header: 'place_url', get: (r) => r.placeUrl },
     { key: 'place_id', header: 'place_id', get: (r) => r.placeId },
     { key: 'id_source', header: 'id_source', get: (r) => r.idSource },
@@ -45,14 +61,23 @@
    * Prefixing an apostrophe forces the cell to text.
    *
    * Plain numbers are exempt: "-4" and "+1" are data, and mangling them would
-   * be the more common harm. This matters more once phone numbers arrive in M2,
-   * where a leading "+" is the norm rather than the exception.
+   * be the more common harm.
+   *
+   * International phone numbers keep the apostrophe deliberately. Quoting the
+   * field does NOT exempt it -- Excel strips the quotes before deciding what a
+   * cell is -- so a bare "+91 22 1234 5678" renders as #NAME? and the number is
+   * simply lost. An apostrophe that a CRM strips on import is the smaller harm.
+   * Indian numbers in the form Maps returns them ("072089 35965") begin with a
+   * digit and never reach this branch at all.
    */
   function neutralise(value) {
     if (!/^[=+\-@\t\r]/.test(value)) return value;
     if (/^[+-]?\d+(\.\d+)?$/.test(value)) return value;
     return "'" + value;
   }
+
+  /** A leading + or -, then only telephone punctuation, 6-20 digits total. */
+  const PHONE_LIKE = /^[+-][\d\s().\- ]{5,24}$/;
 
   /** Quote a single field per RFC 4180. */
   function field(value) {

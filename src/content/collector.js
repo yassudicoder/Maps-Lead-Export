@@ -42,6 +42,9 @@
   let pending = new Map();
   /** Rolling parse-health counters for the current feed. */
   let health = { seen: 0, parsed: 0, idSources: {} };
+  /** Level-2: the URL we last reacted to, and the pending hydration re-reads. */
+  let lastUrl = '';
+  let detailTimers = [];
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -168,6 +171,66 @@
     }, K.RESCAN_DEBOUNCE_MS);
   }
 
+  /* ------------------------------------------------------------------- detail */
+
+  /**
+   * Level-2 enrichment, passive.
+   *
+   * We notice that the user has opened a place and read the pane they are
+   * already looking at. We never open one. Under escalation E1 in
+   * docs/RED-LINES.md the extension initiates no navigation at all, so there is
+   * deliberately no code path here that changes the tab's location, activates a
+   * link, or moves on to another place.
+   *
+   * The retry ladder exists only because the pane hydrates asynchronously; it
+   * targets the single URL the user navigated to and stops at the first
+   * successful read. It is not advancement, and it cannot become advancement:
+   * every attempt re-checks that the URL is still the one the user opened.
+   */
+  function clearDetailTimers() {
+    for (let i = 0; i < detailTimers.length; i += 1) clearTimeout(detailTimers[i]);
+    detailTimers = [];
+  }
+
+  function scheduleDetailReads() {
+    const openedUrl = location.href;
+    const delays = K.DETAIL_READ_DELAYS_MS;
+
+    for (let i = 0; i < delays.length; i += 1) {
+      detailTimers.push(
+        setTimeout(function () {
+          if (stopped || paused || !selectors) return;
+          // The user has moved on; whatever we would read is not what they opened.
+          if (location.href !== openedUrl) return;
+
+          let result = null;
+          try {
+            result = MLE.parserL2.readDetail(document, selectors, openedUrl);
+          } catch (_) {
+            return;
+          }
+          if (!result) return; // not hydrated yet; a later attempt will catch it
+
+          clearDetailTimers();
+          post({
+            type: K.MSG.DETAIL,
+            aliases: result.aliases,
+            name: result.name,
+            patch: result.patch
+          });
+        }, delays[i])
+      );
+    }
+  }
+
+  /** Cheap URL-change check, run from the existing recheck tick. */
+  function watchUrl() {
+    if (location.href === lastUrl) return;
+    lastUrl = location.href;
+    clearDetailTimers();
+    if (/\/maps\/place\//.test(location.pathname)) scheduleDetailReads();
+  }
+
   /* --------------------------------------------------------------------- feed */
 
   function detachFeed() {
@@ -219,9 +282,15 @@
    * costs nothing and reattaches just as reliably.
    */
   function startRecheck() {
+    // INIT arrives again every time the user re-clicks the toolbar icon, so
+    // this must be idempotent or each click strands another 1s interval.
+    if (recheckTimer) clearInterval(recheckTimer);
     recheckTimer = setInterval(function () {
       if (stopped) return;
       if (paused) return;
+      // Opening a place is a URL change, so this same tick is what notices the
+      // user has done it. No separate observer, no body-wide subtree watch.
+      watchUrl();
       if (!feed || !feed.isConnected) {
         attachFeed();
       } else if (captchaSeen) {
@@ -242,6 +311,9 @@
       }
       attachFeed();
       startRecheck();
+      // lastUrl starts empty, so this first tick also enriches a place the user
+      // already had open when they activated the panel.
+      watchUrl();
       post({ type: K.MSG.CONTEXT, query: readQuery(), url: location.href });
       return;
     }
@@ -259,9 +331,7 @@
 
   function teardown() {
     if (stopped) return;
-    stopped = true;
-    detachFeed();
-    if (recheckTimer) clearInterval(recheckTimer);
+ 
     if (rescanTimer) clearTimeout(rescanTimer);
     if (flushTimer) clearTimeout(flushTimer);
     try {
@@ -303,9 +373,11 @@
   root.__MLE_COLLECTOR__ = {
     reannounce: function () {
       if (stopped) return;
-      post({ type: K.MSG.HELLO, url: location.href });
       // Re-clicking the icon is the documented way to recover, so treat it as
       // an explicit resume: clear the paused state and re-report everything.
+      // `resumed` tells the worker to drop its own paused flag too — clearing
+      // only the local one leaves the panel reading "Paused" while we collect.
+      post({ type: K.MSG.HELLO, url: location.href, resumed: true });
       paused = false;
       captchaSeen = false;
       sent.clear();

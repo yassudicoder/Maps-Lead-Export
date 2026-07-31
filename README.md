@@ -23,6 +23,8 @@ proposals.
 | No email harvesting, no third-party sites | Not implemented, not stubbed, not flagged |
 | Data stays local | Rows live in `chrome.storage.local` and leave only as a file the user downloads |
 | Honest data | A field Maps did not show is `null`, never a guess. Website presence is tri-state |
+| Red-line calls are never self-adjudicated | An ambiguous call escalates to Yash. If the reviewer is unavailable, work proceeds on the most conservative reading — a blocked reviewer never defaults to approved |
+| Enrichment is 1:1 with a user gesture | One gesture, one navigation, gated on the previous detail pane finishing. No batch, no queue, no timer-driven advancement in any form |
 
 ## Install (unpacked)
 
@@ -113,11 +115,22 @@ and a formula-injection guard: a value starting `=`, `+`, `-`, `@` or a control
 character is prefixed with an apostrophe unless it is a plain number. Filename is
 `maps-leads-{query}-{yyyy-mm-dd}.csv`.
 
-Columns: `name, category, rating, reviews, address_line, website_status,
-place_url, place_id, id_source, source_query, collected_at, data_level`.
+Columns: `name, category, rating, reviews, phone, website_status, website_url,
+website_source, address_line, full_address, plus_code, place_url, place_id,
+id_source, source_query, collected_at, data_level`.
 
 Empty means Maps did not show it. `reviews` in particular is blank rather than
 zero when the card omitted the count, which happens on whole verticals.
+
+`website_source` is the column that makes the rest trustworthy: `card` means the
+status was inferred from the results list, `detail` means it was proven on the
+place's own page. A `none` from a card is an inference; a `none` from a detail
+pane is a fact. Sort by it before you pitch.
+
+International phone numbers carry a leading apostrophe. That is deliberate:
+Excel evaluates a cell starting `+` as a formula and renders `#NAME?`, and CSV
+quoting does not exempt it. Indian numbers as Maps returns them (`072089 35965`)
+start with a digit and are untouched.
 
 ## Conventions
 

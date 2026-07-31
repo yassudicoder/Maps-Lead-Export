@@ -23,6 +23,10 @@
       optional: ['ratingText', 'reviewCountText']
     },
     context: { required: [], optional: ['searchInput'] },
+    detail: {
+      required: ['pane', 'website', 'phone', 'address', 'anyItem'],
+      optional: ['title', 'plusCode']
+    },
     captcha: { required: ['signals'], optional: [] }
   };
 

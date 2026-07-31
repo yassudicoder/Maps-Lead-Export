@@ -47,6 +47,7 @@
       // collector -> service worker
       HELLO: 'hello',
       ROWS: 'rows',
+      DETAIL: 'detail',
       HEALTH: 'health',
       CAPTCHA: 'captcha',
       CONTEXT: 'context',
@@ -76,7 +77,9 @@
     WEBSITE_REASON: Object.freeze({
       CHIP: 'chip',
       CHIP_ROW_WITHOUT_WEBSITE: 'chip-row-without-website',
-      NO_CHIP_ROW: 'no-chip-row'
+      NO_CHIP_ROW: 'no-chip-row',
+      DETAIL_LINK: 'detail-link',
+      DETAIL_NO_LINK: 'detail-no-link'
     }),
 
     /** Where a field came from. Level 2 adds `detail` in M2. */
@@ -87,6 +90,14 @@
 
     /** How long after an injection we say "starting" rather than "reconnect". */
     CONNECT_GRACE_MS: 4000,
+
+    /**
+     * When the user opens a place, the pane hydrates over a few hundred ms.
+     * These are re-read attempts on the pane they already opened; they stop at
+     * the first successful read. Nothing here opens anything, and nothing
+     * advances to another place — see red line 8.
+     */
+    DETAIL_READ_DELAYS_MS: [0, 350, 900, 1800, 3200],
 
     /** Consecutive bad-health scans before we call the layout broken. */
     HEALTH_STRIKES: 2,

@@ -28,6 +28,16 @@
     "searchInput": ["input#searchboxinput", "input[name=\"q\"]"]
   },
 
+  "detail": {
+    "pane": ["div[role=\"main\"][aria-label]"],
+    "title": ["h1"],
+    "website": ["a[data-item-id=\"authority\"]"],
+    "phone": ["[data-item-id^=\"phone:tel:\"]"],
+    "address": ["[data-item-id=\"address\"]"],
+    "plusCode": ["[data-item-id=\"oloc\"]"],
+    "anyItem": ["[data-item-id]"]
+  },
+
   "captcha": {
     "signals": [
       "iframe[src*=\"recaptcha\"]",

@@ -63,6 +63,13 @@
   "websiteNone": { "message": "No website" },
   "websiteUnknown": { "message": "Website unknown" },
   "websiteUnknownHint": { "message": "Open this place in Maps to confirm" },
+  "websiteConfirmedHint": { "message": "Confirmed from the place's own page" },
+  "websiteFromCardHint": { "message": "Read from the results card" },
+
+  "unresolvedNone": { "message": "Every lead confirmed" },
+  "unresolvedSome": { "message": "$COUNT$ still to confirm", "placeholders": { "count": { "content": "$1", "example": "13" } } },
+  "unresolvedHow": { "message": "Open a place in Maps and its website, phone and full address fill in here automatically." },
+  "diagEnriched": { "message": "Confirmed" },
 
   "noRating": { "message": "No rating" },
   "noReviews": { "message": "Review count not shown" },

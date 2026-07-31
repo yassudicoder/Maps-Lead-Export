@@ -353,6 +353,72 @@ body {
   height: 6px;
 }
 
+/* Third line, present only once the session has enriched rows. Phone is the
+   field an outreach list is actually worked from, so it leads. */
+.row-contact {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 11px;
+  min-width: 0;
+}
+
+.row-phone {
+  flex: none;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.row-site {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A confirmed value is stated plainly; an inferred one stays hedged. */
+.pill[data-source="detail"] {
+  border-style: solid;
+}
+
+.pill[data-website="none"][data-source="detail"] {
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------- resolution banner */
+
+.resolve {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex: none;
+}
+
+.resolve-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--flag);
+  flex: none;
+}
+
+.resolve[data-done="true"] .resolve-dot {
+  background: var(--ok);
+}
+
+.resolve-text {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 0;
+}
+
 /* ------------------------------------------------------------- empty states */
 
 .state {

@@ -17,6 +17,7 @@
     'banner', 'bannerTitle', 'bannerText', 'bannerAction',
     'stateView', 'stateArt', 'stateTitle', 'stateText', 'stateAction',
     'list', 'sizer',
+    'resolve', 'resolveDot', 'resolveText',
     'exportBtn', 'pauseBtn', 'pauseIcon', 'clearBtn',
     'confirm', 'confirmText', 'confirmNo', 'confirmYes',
     'diag', 'healthLine', 'diagGrid',
@@ -58,7 +59,8 @@
   const list = MLE.VirtualList({
     container: el.list,
     sizer: el.sizer,
-    rowHeight: 64,
+    rowHeight: 64, // grows to ROW_HEIGHT_CONTACT once enrichment starts
+
     createRow: function () {
       return el.rowTemplate.content.firstElementChild.cloneNode(true);
     },
@@ -100,24 +102,66 @@
       meta.classList.add('faint');
     }
 
+    const source = (row.provenance && row.provenance.website) || K.SOURCE.CARD;
     const pill = node.querySelector('.pill');
     pill.dataset.website = row.website;
+    pill.dataset.source = source;
     if (row.website === K.WEBSITE.HAS) {
       pill.textContent = msg('websiteHas');
-      pill.title = '';
     } else if (row.website === K.WEBSITE.NONE) {
       pill.textContent = msg('websiteNone');
-      pill.title = '';
     } else {
       pill.textContent = msg('websiteUnknown');
-      pill.title = msg('websiteUnknownHint');
     }
+    // The tooltip is where has/none stops being a label and starts being a
+    // claim with a basis: read off a card, or proven on the place's own page.
+    pill.title =
+      row.website === K.WEBSITE.UNKNOWN
+        ? msg('websiteUnknownHint')
+        : source === K.SOURCE.DETAIL
+          ? msg('websiteConfirmedHint')
+          : msg('websiteFromCardHint');
+
+    const phone = node.querySelector('.row-phone');
+    const site = node.querySelector('.row-site');
+    phone.textContent = row.phone || '';
+    if (row.websiteUrl) {
+      site.textContent = prettyHost(row.websiteUrl);
+      site.title = row.websiteUrl;
+    } else {
+      site.textContent = '';
+      site.title = '';
+    }
+  }
+
+  /** "https://www.lovenlatte.com/" -> "lovenlatte.com" */
+  function prettyHost(url) {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch (_) {
+      return url;
+    }
+  }
+
+  const ROW_HEIGHT_PLAIN = 64;
+  const ROW_HEIGHT_CONTACT = 82;
+
+  /**
+   * Rows grow a contact line the moment the session has any contact data to
+   * show, and every row shares that height so windowing stays arithmetic.
+   */
+  function syncRowHeight() {
+    const hasContact = rows.some(function (r) {
+      return r.phone || r.websiteUrl;
+    });
+    list.setRowHeight(hasContact ? ROW_HEIGHT_CONTACT : ROW_HEIGHT_PLAIN);
   }
 
   function setRows(next) {
     rows = next;
     indexOf.clear();
     for (let i = 0; i < rows.length; i += 1) indexOf.set(rows[i].placeId, i);
+    syncRowHeight();
     list.setItems(rows);
   }
 
@@ -130,8 +174,31 @@
       indexOf.set(added[i].placeId, rows.length);
       rows.push(added[i]);
     }
+    syncRowHeight();
     if (added.length) list.setItems(rows);
     else if (updated.length) list.refresh();
+  }
+
+  /** How many rows still have no confirmed answer on the website question. */
+  function unresolvedCount() {
+    let n = 0;
+    for (let i = 0; i < rows.length; i += 1) {
+      if (rows[i].website === K.WEBSITE.UNKNOWN) n += 1;
+    }
+    return n;
+  }
+
+  function renderResolve(count) {
+    if (!count) {
+      el.resolve.hidden = true;
+      return;
+    }
+    const left = unresolvedCount();
+    el.resolve.hidden = false;
+    el.resolve.dataset.done = left === 0 ? 'true' : 'false';
+    el.resolveText.textContent = left
+      ? msg('unresolvedSome', [T.formatCount(left)]) + ' — ' + msg('unresolvedHow')
+      : msg('unresolvedNone');
   }
 
   /* -------------------------------------------------------------------- states */
@@ -207,9 +274,12 @@
     // With no rows there is nothing to sit behind a banner, so the explanation
     // becomes the whole panel. With rows, the list stays put and the note
     // narrows to a banner above it.
+    renderResolve(count);
+
     if (count === 0) {
       el.list.hidden = true;
       el.banner.hidden = true;
+      el.resolve.hidden = true;
       el.stateView.hidden = false;
       const empty = note || { title: msg('emptyTitle'), text: msg('emptyBody') };
       el.stateTitle.textContent = empty.title;

@@ -106,10 +106,110 @@ eq('filename', CSV.filename('Plumbers in Austin, TX', new Date(2026, 6, 31)),
 eq('filename without query', CSV.filename('', new Date(2026, 6, 31)),
    'maps-leads-2026-07-31.csv');
 
+/* ------------------------------------------------- identifiers and merging */
+
+// chrome is stubbed just enough for the session store to load and persist.
+let persisted = null;
+global.chrome = {
+  runtime: { lastError: null },
+  storage: {
+    local: {
+      get: (keys, cb) => cb({}),
+      set: (obj, cb) => { persisted = obj; if (cb) cb(); }
+    }
+  }
+};
+
+const path = require('node:path');
+require(path.join(__dirname, '..', 'src', 'content', 'parser-level1.js'));
+require(path.join(__dirname, '..', 'src', 'background', 'session-store.js'));
+const L1 = global.MLE.parserL1;
+const store = global.MLE.sessionStore;
+
+// A result-card href carries all three identifiers.
+const cardHref = 'https://www.google.com/maps/place/Love+%26+Latte/data=!4m7!3m6!1s0x3be7b6ed0a58cf27:0xe6857d3079009eb0!8m2!3d19.1858849!4d72.83024!16s%2Fg%2F11bw5t55ng!19sChIJJ89YCu225zsRsJ4AeTB9heY';
+const cardIds = L1.extractIdentifiers(cardHref, 'Love & Latte');
+eq('card: primary is place_id', cardIds.placeId, 'ChIJJ89YCu225zsRsJ4AeTB9heY');
+eq('card: idSource', cardIds.idSource, 'place_id');
+eq('card: ftid retained too', cardIds.ftid, '0x3be7b6ed0a58cf27:0xe6857d3079009eb0');
+eq('card: mid retained too', cardIds.mid, '/g/11bw5t55ng');
+eq('card: geo retained', cardIds.geo, '19.1858849,72.83024');
+
+// The detail URL has NO !19s -- this is the blocker the aliases exist for.
+const detailHref = 'https://www.google.com/maps/place/Love+%26+Latte/@19.18,72.83,17z/data=!3m1!4b1!4m6!3m5!1s0x3be7b6ed0a58cf27:0xe6857d3079009eb0!8m2!3d19.1858849!4d72.83024!16s%2Fg%2F11bw5t55ng?entry=ttu';
+const detailIds = L1.extractIdentifiers(detailHref, 'Love & Latte');
+eq('detail: no place_id present', detailIds.placeId, '0x3be7b6ed0a58cf27:0xe6857d3079009eb0');
+eq('detail: falls back to ftid', detailIds.idSource, 'ftid');
+eq('detail: ftid matches the card', detailIds.ftid, cardIds.ftid);
+eq('detail: mid matches the card', detailIds.mid, cardIds.mid);
+
+const K = global.MLE.K;
+
+function l1row(over) {
+  return Object.assign({
+    placeId: cardIds.placeId, idSource: 'place_id', ftid: cardIds.ftid, mid: cardIds.mid,
+    name: 'Love & Latte', category: 'Cafe', addressLine: 'Ground Flr, INTERFACE-11',
+    rating: 4.1, reviewCount: 2850, website: K.WEBSITE.UNKNOWN,
+    websiteReason: K.WEBSITE_REASON.NO_CHIP_ROW, placeUrl: 'https://x', query: 'cafe',
+    collectedAt: 1750000000000, level: 1,
+    provenance: { name: 'card', website: 'card' }
+  }, over || {});
+}
+
+(async () => {
+  await store.load();
+  store.addRows([l1row()]);
+  eq('store: row added', store.size(), 1);
+  eq('store: starts unresolved', store.unresolvedCount(), 1);
+
+  // The user opens the place; the detail pane proves a website and a phone.
+  const patched = store.applyDetail(
+    [detailIds.placeId, detailIds.mid],
+    {
+      website: K.WEBSITE.HAS,
+      websiteReason: K.WEBSITE_REASON.DETAIL_LINK,
+      websiteUrl: 'http://www.lovenlatte.com/',
+      phone: '07208935965',
+      fullAddress: 'Ground Flr, INTERFACE-11, Jaichandlal Karwa Marg',
+      plusCode: '5RPJ+93 Mumbai'
+    }
+  );
+  eq('detail: matched the row by ftid alias', !!patched, true);
+  eq('detail: website resolved', patched.website, K.WEBSITE.HAS);
+  eq('detail: url captured', patched.websiteUrl, 'http://www.lovenlatte.com/');
+  eq('detail: phone captured', patched.phone, '07208935965');
+  eq('detail: provenance recorded', patched.provenance.website, 'detail');
+  eq('detail: level promoted', patched.level, 2);
+  eq('store: now resolved', store.unresolvedCount(), 0);
+
+  // THE REGRESSION THAT MATTERS: the user keeps scrolling, the card is
+  // re-parsed, and the thinner Level-1 view must not undo any of that.
+  store.addRows([l1row()]);
+  const after = store.all()[0];
+  eq('rescan: website survives', after.website, K.WEBSITE.HAS);
+  eq('rescan: websiteUrl survives', after.websiteUrl, 'http://www.lovenlatte.com/');
+  eq('rescan: phone survives', after.phone, '07208935965');
+  eq('rescan: fullAddress survives', after.fullAddress, 'Ground Flr, INTERFACE-11, Jaichandlal Karwa Marg');
+  eq('rescan: provenance still detail', after.provenance.website, 'detail');
+  eq('rescan: no duplicate row', store.size(), 1);
+
+  // A card field with no detail claim is still allowed to update.
+  store.addRows([l1row({ reviewCount: 2900 })]);
+  eq('rescan: card fields still update', store.all()[0].reviewCount, 2900);
+
+  // An unknown place must not silently create or corrupt a row.
+  eq('detail: unmatched alias is a no-op', store.applyDetail(['nope'], { phone: '1' }), null);
+  eq('detail: no row invented', store.size(), 1);
+
+  report();
+})();
+
+function report() {
 /* ---------------------------------------------------------------------- report */
 
 console.log(pass + ' passed, ' + fails.length + ' failed');
 if (fails.length) {
   fails.forEach((f) => console.log('  FAIL ' + f));
   process.exit(1);
+}
 }

@@ -124,6 +124,7 @@ const CONTENT_FILES = [
   'src/common/text.js',
   'src/common/selector-schema.js',
   'src/content/parser-level1.js',
+  'src/content/parser-level2.js',
   'src/content/collector.js'
 ];
 
@@ -250,6 +251,9 @@ function handleCollector(port) {
         runtime.captcha = false;
         runtime.layoutBroken = false;
         runtime.healthStrikes = 0;
+        // A re-click is an explicit resume; the collector has already cleared
+        // its own flag and would otherwise be collecting behind a "Paused" UI.
+        if (msg.resumed) runtime.paused = false;
         Promise.all([loadSelectors(), store.load()]).then(function () {
           if (!selectorMap) {
             broadcastState();
@@ -278,6 +282,22 @@ function handleCollector(port) {
           } else {
             broadcastState();
           }
+        });
+        break;
+
+      case K.MSG.DETAIL:
+        store.load().then(function () {
+          const row = store.applyDetail(msg.aliases || [], msg.patch || {});
+          if (!row) {
+            // The user opened a place we never collected — nothing to enrich.
+            return;
+          }
+          broadcast({
+            type: K.MSG.DELTA,
+            added: [],
+            updated: [row],
+            state: stateSnapshot()
+          });
         });
         break;
 

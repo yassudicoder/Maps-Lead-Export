@@ -39,6 +39,7 @@
             if (row && row.placeId) rows.set(row.placeId, row);
           }
           query = saved.query || '';
+          reindex();
         }
         resolve();
       });
@@ -97,14 +98,13 @@
       const row = incoming[i];
       if (!row || !row.placeId || !row.name) continue;
 
-      const existing = rows.get(row.placeId);
+      const existing = rows.get(row.placeId) || resolve(row.placeId);
       if (existing) {
-        // Keep the original collectedAt: it records when the user first saw
-        // this business, which is the thing worth knowing.
-        row.collectedAt = existing.collectedAt;
-        if (!changed(existing, row)) continue;
-        rows.set(row.placeId, row);
-        updated.push(row);
+        const merged = mergeLevel1(existing, row);
+        if (!merged) continue;
+        rows.set(merged.placeId, merged);
+        index(merged);
+        updated.push(merged);
         continue;
       }
 
@@ -113,6 +113,7 @@
         continue;
       }
       rows.set(row.placeId, row);
+      index(row);
       added.push(row);
     }
 
@@ -120,7 +121,8 @@
     return { added: added, updated: updated, full: isFull(), dropped: dropped };
   }
 
-  const COMPARED = [
+  /** Level-1 fields, i.e. everything a result card can supply. */
+  const LEVEL1_FIELDS = [
     'name',
     'category',
     'addressLine',
@@ -128,15 +130,116 @@
     'reviewCount',
     'website',
     'websiteReason',
-    'placeUrl',
-    'level'
+    'placeUrl'
   ];
 
-  function changed(a, b) {
-    for (let i = 0; i < COMPARED.length; i += 1) {
-      if (a[COMPARED[i]] !== b[COMPARED[i]]) return true;
+  /**
+   * Fold a freshly parsed Level-1 row into the stored one.
+   *
+   * The rule that matters: a field already proven by the detail pane is never
+   * overwritten by a card read. Without this, opening a place would enrich the
+   * row and the very next rescan — milliseconds later, as the user keeps
+   * scrolling — would replace it wholesale with the card's thinner version and
+   * silently undo the work. Provenance is what makes the distinction, which is
+   * why every field carries it from M1.
+   *
+   * @returns {object|null} the merged row, or null when nothing changed.
+   */
+  function mergeLevel1(existing, incoming) {
+    const merged = Object.assign({}, existing);
+    const provenance = Object.assign({}, existing.provenance || {});
+    let touched = false;
+
+    for (let i = 0; i < LEVEL1_FIELDS.length; i += 1) {
+      const field = LEVEL1_FIELDS[i];
+      if (provenance[field] === K.SOURCE.DETAIL) continue; // earned at Level 2
+      if (merged[field] === incoming[field]) continue;
+      merged[field] = incoming[field];
+      if (incoming.provenance && incoming.provenance[field]) {
+        provenance[field] = incoming.provenance[field];
+      }
+      touched = true;
     }
-    return false;
+
+    // Aliases only ever accumulate: a card that omits one must not erase it.
+    ['ftid', 'mid', 'geo'].forEach(function (key) {
+      if (!merged[key] && incoming[key]) {
+        merged[key] = incoming[key];
+        touched = true;
+      }
+    });
+
+    if (!touched) return null;
+    merged.provenance = provenance;
+    // collectedAt records when the user first saw this business, so it stands.
+    merged.collectedAt = existing.collectedAt;
+    return merged;
+  }
+
+  /**
+   * Patch a row with Level-2 fields read from a detail pane the user opened.
+   *
+   * Detail beats card on every field it supplies, and the patch is applied even
+   * when the session is full: it enriches a row that is already held rather
+   * than adding one.
+   *
+   * @returns {object|null} the updated row, or null if no row matched.
+   */
+  function applyDetail(aliases, patch) {
+    let row = null;
+    for (let i = 0; i < aliases.length && !row; i += 1) {
+      row = rows.get(aliases[i]) || resolve(aliases[i]);
+    }
+    if (!row) return null;
+
+    const merged = Object.assign({}, row);
+    const provenance = Object.assign({}, row.provenance || {});
+    let touched = false;
+
+    Object.keys(patch).forEach(function (field) {
+      const value = patch[field];
+      if (value === undefined || value === null || value === '') return;
+      if (merged[field] === value) {
+        // Already correct, but record that the detail pane proved it.
+        if (provenance[field] !== K.SOURCE.DETAIL) {
+          provenance[field] = K.SOURCE.DETAIL;
+          touched = true;
+        }
+        return;
+      }
+      merged[field] = value;
+      provenance[field] = K.SOURCE.DETAIL;
+      touched = true;
+    });
+
+    if (!touched) return null;
+    merged.provenance = provenance;
+    merged.level = 2;
+    merged.enrichedAt = Date.now();
+    rows.set(merged.placeId, merged);
+    index(merged);
+    schedulePersist();
+    return merged;
+  }
+
+  /** alias -> primary placeId, so a detail pane finds its row. */
+  let aliasIndex = new Map();
+
+  function index(row) {
+    if (!row || !row.placeId) return;
+    ['ftid', 'mid'].forEach(function (key) {
+      if (row[key]) aliasIndex.set(row[key], row.placeId);
+    });
+  }
+
+  function resolve(alias) {
+    const primary = aliasIndex.get(alias);
+    return primary ? rows.get(primary) : null;
+  }
+
+  function reindex() {
+    aliasIndex = new Map();
+    rows.forEach(index);
   }
 
   function setQuery(next) {
@@ -148,14 +251,26 @@
 
   function clear() {
     rows = new Map();
+    aliasIndex = new Map();
     query = '';
     dirty = true;
     persistNow();
   }
 
+  /** Rows the detail pane has not yet resolved — what M2's counter reports. */
+  function unresolvedCount() {
+    let n = 0;
+    rows.forEach(function (row) {
+      if (row.website === K.WEBSITE.UNKNOWN) n += 1;
+    });
+    return n;
+  }
+
   MLE.sessionStore = {
     load: load,
     addRows: addRows,
+    applyDetail: applyDetail,
+    unresolvedCount: unresolvedCount,
     setQuery: setQuery,
     clear: clear,
     isFull: isFull,
