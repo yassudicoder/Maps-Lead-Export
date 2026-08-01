@@ -78,7 +78,9 @@ const runtime = {
   feedIdentified: true,
   viewingPlace: false,
   /** A relay is dispatched and its pane has not finished. Gates the accelerator. */
-  relayBusy: false
+  relayBusy: false,
+  /** {day, count, rows} for the local calendar day. Loaded on start. */
+  exportUsage: null
 };
 
 function resolveState() {
@@ -113,6 +115,8 @@ function stateSnapshot() {
       idSources: runtime.health.idSources
     },
     droppedSelectors: runtime.droppedSelectors,
+    // Today's export tally, so the panel can gate before writing a file.
+    exportUsage: runtime.exportUsage,
     relayBusy: runtime.relayBusy,
     canRelay: collectors.size > 0 && !runtime.paused && !runtime.captcha
   };
@@ -568,11 +572,26 @@ function noteExport(count) {
     if (chrome.runtime.lastError) return;
     const today = self.MLE.entitlements.today();
     const prev = (data && data[K.STORAGE.EXPORTS]) || {};
+    // A different local day resets the tally rather than accumulating, which is
+    // what makes "2 exports a day" mean what a user thinks it means.
     const next =
       prev.day === today
         ? { day: today, count: (prev.count || 0) + 1, rows: (prev.rows || 0) + count }
         : { day: today, count: 1, rows: count };
     chrome.storage.local.set({ [K.STORAGE.EXPORTS]: next });
+    runtime.exportUsage = next;
+    broadcastState();
+  });
+}
+
+/** Read today's tally at start-up so the first export is gated correctly. */
+function loadExportUsage() {
+  chrome.storage.local.get([K.STORAGE.EXPORTS], function (data) {
+    if (chrome.runtime.lastError) return;
+    const saved = (data && data[K.STORAGE.EXPORTS]) || null;
+    runtime.exportUsage =
+      saved && saved.day === self.MLE.entitlements.today() ? saved : null;
+    broadcastState();
   });
 }
 
@@ -617,3 +636,4 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
 loadSelectors();
 store.load();
 self.MLE.exportedIndex.load();
+loadExportUsage();

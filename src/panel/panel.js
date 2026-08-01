@@ -27,6 +27,8 @@
     'fExcludeExported', 'fExcludeExportedRow',
     'copyBtn', 'columnsBtn', 'columnsPanel', 'columnsList',
     'columnsAll', 'columnsDefault', 'columnsDone',
+    'presetsRow', 'presetChips', 'presetSave', 'presetNameRow',
+    'presetName', 'presetConfirm', 'presetCancel',
     'toast', 'rowTemplate'
   ].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -675,7 +677,20 @@
 
     // Export what is on screen. A filter the user can see is a filter they
     // meant; silently writing the unfiltered session would be a nasty surprise.
-    const limit = MLE.entitlements.exportRowLimit();
+    // Free-tier gate. Under BETA_ALL_FREE every branch here reports "allowed",
+    // but the path is live so M3's flip is a constant change and nothing else.
+    const gate = MLE.entitlements.checkExport(state.exportUsage, shown.length);
+    if (!gate.allowed) {
+      toast(msg('capDailyReached', [String(MLE.entitlements.exportsPerDay())]), 'error');
+      return;
+    }
+    if (gate.willTruncate) {
+      toast(msg('capRowsTruncated', [
+        T.formatCount(gate.rowLimit), T.formatCount(shown.length)
+      ]));
+    }
+
+    const limit = gate.rowLimit;
     const slice = limit === Infinity ? shown : shown.slice(0, limit);
     stampDistances(slice);
 
@@ -895,6 +910,102 @@
     }
   }
 
+  /* --------------------------------------------------------------- presets */
+
+  /** Push the current filter object back into the controls. */
+  function writeFiltersToUi() {
+    el.fMaxRating.value = filters.maxRating == null ? '' : String(filters.maxRating);
+    el.fMaxReviews.value = filters.maxReviews == null ? '' : String(filters.maxReviews);
+    el.fRadius.value = filters.radiusKm == null ? '' : String(filters.radiusKm);
+    el.fCategory.value = filters.category || '';
+    el.fName.value = filters.name || '';
+    el.fKeepUnknown.checked = filters.keepUnknown !== false;
+    el.fExcludeExported.checked = filters.excludeExported !== false;
+    syncWebsiteSeg();
+  }
+
+  function renderPresets() {
+    if (!MLE.entitlements.has('savedPresets')) {
+      el.presetsRow.hidden = true;
+      el.presetSave.hidden = true;
+      return;
+    }
+    el.presetSave.hidden = false;
+
+    const items = MLE.presets.all();
+    el.presetsRow.hidden = items.length === 0;
+    el.presetChips.textContent = '';
+
+    items.forEach(function (preset) {
+      const chip = document.createElement('span');
+      chip.className = 'preset-chip';
+
+      const apply = document.createElement('button');
+      apply.type = 'button';
+      apply.className = 'preset-apply';
+      apply.textContent = preset.name;
+      apply.title = msg('presetApplyHint');
+      apply.addEventListener('click', function () {
+        const restored = MLE.presets.get(preset.name);
+        if (!restored) return;
+        filters = restored;
+        writeFiltersToUi();
+        recompute();
+        render();
+      });
+
+      const drop = document.createElement('button');
+      drop.type = 'button';
+      drop.className = 'preset-remove';
+      drop.textContent = '×';
+      drop.title = msg('presetRemoveHint');
+      drop.setAttribute('aria-label', msg('presetRemoveHint') + ': ' + preset.name);
+      drop.addEventListener('click', function () {
+        MLE.presets.remove(preset.name);
+        toast(msg('presetRemoved', [preset.name]));
+        renderPresets();
+      });
+
+      chip.appendChild(apply);
+      chip.appendChild(drop);
+      el.presetChips.appendChild(chip);
+    });
+  }
+
+  el.presetSave.addEventListener('click', function () {
+    el.presetNameRow.hidden = false;
+    el.presetName.placeholder = msg('presetNamePlaceholder');
+    el.presetName.focus();
+  });
+  el.presetCancel.addEventListener('click', function () {
+    el.presetNameRow.hidden = true;
+    el.presetName.value = '';
+  });
+  el.presetConfirm.addEventListener('click', savePreset);
+  el.presetName.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      savePreset();
+    } else if (event.key === 'Escape') {
+      el.presetCancel.click();
+    }
+    // Enter inside the name field must not reach the accelerator's binding.
+    event.stopPropagation();
+  });
+
+  function savePreset() {
+    const name = el.presetName.value.trim();
+    const result = MLE.presets.save(name, filters);
+    if (!result.ok) {
+      if (result.reason === 'full') toast(msg('presetFull', [String(MLE.presets.MAX)]), 'error');
+      return;
+    }
+    el.presetNameRow.hidden = true;
+    el.presetName.value = '';
+    toast(msg('presetSaved', [name]));
+    renderPresets();
+  }
+
   el.filtersReset.addEventListener('click', function () {
     filters = MLE.filters.empty();
     el.fMaxRating.value = '';
@@ -1090,6 +1201,7 @@
   buildColumnList();
   loadColumns();
   syncWebsiteSeg();
+  MLE.presets.load().then(renderPresets);
   render();
   connect();
 })(typeof self !== 'undefined' ? self : this);

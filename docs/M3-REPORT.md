@@ -11,7 +11,12 @@ the locale. Milestone artifacts come from Yash's machine. See
 | Task 0 — feed identity, no-strike viewing-place, 3 DOM fixtures, `feed:identity` logging, banner CSS | `030c871` | Triggering state **not reproduced**; see below |
 | A1 — three carried nits | `91b5e34` | 53→45 delta **not reconciled**; see below |
 | A6 — Open-next accelerator | `09a7859` | E1 mechanism verbatim, one press one place |
-| A7 — centroid distance filter | this commit | Plus the M2 filter set, which was missing |
+| A7 — centroid distance filter | `74f522b` | Plus the M2 filter set, which was missing |
+| A2 — cross-session exported index | `d9ad8eb` | LRU 50k, badge, toggle, options page |
+| A5 — column picker + clipboard TSV | `6fb86f4` | 20 columns, 11 default |
+| A3 — saved filter presets | this commit | |
+| A4 — free-cap enforcement | this commit | Wired and tested; `BETA_ALL_FREE` stays `true` |
+| A8 — missing-space bug | this commit | Reproduced; it is Google's data, see below |
 
 ## Two things that are not what they look like
 
@@ -68,13 +73,49 @@ there is no extra page reading and no network. Coverage is logged once per
 session as `geo:coverage {withGeo, total, rate}`, because the distance column is
 only as trustworthy as that rate.
 
-## Still to do in Part A
+## A8: the missing space is Google's, not ours
 
-A2 cross-session exported index · A3 saved presets · A4 free-cap enforcement ·
-A5 column picker and clipboard TSV · A8 the Cafe Emearald missing-space bug.
+Reproduced on the live place page. The address renders as
+"…near Shree Icchapurti Hanuman MandirNew, Malad, …" and a `TreeWalker` over
+the element finds **one text node** containing exactly that. The aria-label
+carries the same string. There is no element boundary, no stripped separator and
+no concatenation on our side — Google is serving it that way, and the result
+card shows the identical string.
 
-Part B is not started and must not be: it is gated on Gate A and on Yash
-confirming his Google Cloud key.
+So there is nothing to fix, and fixing it would be worse than leaving it. Any
+repair means inserting a space into a business address on a guess ("Mandir" +
+"New"), and addresses are full of legitimate runs like "MandirNew" that a
+heuristic cannot distinguish from a typo. The parser's job is to report what
+Maps shows; a lead list that silently rewrites addresses is less trustworthy
+than one that shows the source's own mistake.
+
+Recorded rather than closed silently, because "we looked and it is upstream" is
+a different answer from "we fixed it".
+
+## A4: enforcement is live, the cap is not
+
+`BETA_ALL_FREE` stays `true`, so nothing is currently withheld. What changed is
+that the gate is now a real code path rather than a constant nobody reads:
+`checkExport` returns `allowed`, `rowLimit`, `willTruncate` and
+`remainingToday`, the panel consults it before writing a file, and the daily
+tally is loaded at start-up and reset on a **local** calendar day — a cap that
+rolled over at UTC midnight would read as a bug to anyone east of Greenwich.
+
+Truncation is announced before the file is written. Silently exporting the first
+25 of 240 rows is the kind of surprise that loses a user permanently.
+
+`test/entitlements.js` covers the arithmetic independently of the flag, so
+flipping the constant in M3 is a one-line change with the behaviour already
+pinned.
+
+## Part A is complete
+
+Gate A is next, and it is yours: an export showing the distance column and
+exported badges, a description or capture of the accelerator advancing one press
+at a time, and Copy diagnostics — all from your machine.
+
+Part B is not started and must not be: it is gated on Gate A and on your Google
+Cloud key.
 
 ## Verification so far
 

@@ -76,10 +76,28 @@
             <span data-i18n="filterExcludeExported">Hide places I exported before</span>
           </label>
 
+          <div class="presets" id="presetsRow" hidden>
+            <span class="flabel" data-i18n="presetsTitle">Saved filters</span>
+            <div class="preset-chips" id="presetChips"></div>
+          </div>
+
           <div class="filters-foot">
             <span class="filters-count" id="filtersCount"></span>
+            <button type="button" class="btn btn-quiet" id="presetSave" data-i18n="presetSave">
+              Save
+            </button>
             <button type="button" class="btn btn-quiet" id="filtersReset" data-i18n="filterReset">
               Reset
+            </button>
+          </div>
+
+          <div class="preset-name" id="presetNameRow" hidden>
+            <input type="text" id="presetName" maxlength="60" autocomplete="off" />
+            <button type="button" class="btn" id="presetConfirm" data-i18n="presetConfirm">
+              Save
+            </button>
+            <button type="button" class="btn btn-quiet" id="presetCancel" data-i18n="btnClearNo">
+              Keep
             </button>
           </div>
         </div>
@@ -244,6 +262,7 @@
     <script src="../common/text.js"></script>
     <script src="../common/geo.js"></script>
     <script src="../common/filters.js"></script>
+    <script src="../common/presets.js"></script>
     <script src="../common/csv.js"></script>
     <script src="../common/entitlements.js"></script>
     <script src="virtual-list.js"></script>
