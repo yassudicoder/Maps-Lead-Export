@@ -851,6 +851,53 @@ body {
 
 /* ------------------------------------------------------------- diagnostics */
 
+/* Column picker. Scrolls rather than growing the footer past the list. */
+.columns {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.columns-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.columns-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  max-height: 168px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.columns-list .fcheck {
+  font-size: 10.5px;
+  align-items: center;
+}
+
+.columns-foot {
+  display: flex;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.columns-foot .btn {
+  font-size: 10.5px;
+  padding: 3px 7px;
+}
+
+.columns-foot .btn:last-child {
+  margin-left: auto;
+}
+
 .diag {
   margin-top: 7px;
 }

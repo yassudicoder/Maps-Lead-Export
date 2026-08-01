@@ -320,6 +320,55 @@ eq('csv: distance blank without coordinates',
 eq('csv: distance to one decimal',
   cell(Object.assign({}, base, { website: 'unknown', distanceKm: 2.4 }), 'distance_km'), '2.4');
 
+/* --------------------------------------------- column picker and clipboard */
+
+const pickRow = Object.assign({}, base, {
+  website: 'has', websiteUrl: 'http://x.test/', phone: '072089 35965',
+  fullAddress: 'Somewhere, Mumbai, Maharashtra 400064', distanceKm: 2.4
+});
+
+eq('columns: default set is a subset of all',
+  MLE.csv.DEFAULT_KEYS.every((k) => MLE.csv.COLUMNS.some((c) => c.key === k)), true);
+
+const picked = CSV.build([pickRow], { bom: false, columns: ['name', 'phone', 'website_status'] });
+eq('columns: header honours the pick', picked.split('\r\n')[0], 'name,phone,website_status');
+eq('columns: row honours the pick', picked.split('\r\n')[1], 'Test Cafe,072089 35965,has');
+
+// Order follows the canonical column order, not the order the user ticked, so
+// a sheet keeps its shape between exports.
+const reordered = CSV.build([pickRow], { bom: false, columns: ['website_status', 'name', 'phone'] });
+eq('columns: canonical order is preserved', reordered.split('\r\n')[0], 'name,phone,website_status');
+
+// An empty pick means "not chosen", never "a file with no columns".
+eq('columns: empty pick falls back to all',
+  CSV.build([pickRow], { bom: false, columns: [] }).split('\r\n')[0].split(',').length,
+  MLE.csv.COLUMNS.length);
+eq('columns: unknown keys are ignored',
+  CSV.build([pickRow], { bom: false, columns: ['name', 'not_a_column'] }).split('\r\n')[0], 'name');
+
+const tsv = CSV.buildTsv([pickRow], { columns: ['name', 'full_address', 'distance_km'] });
+const tsvLines = tsv.split('\n');
+eq('tsv: tab separated', tsvLines[0], 'name\tfull_address\tdistance_km');
+// A spreadsheet paste does no quote processing, so a comma needs no quoting
+// and quoting it would paste literal quote marks into the cell.
+eq('tsv: commas are not quoted', tsvLines[1],
+  'Test Cafe\tSomewhere, Mumbai, Maharashtra 400064\t2.4');
+eq('tsv: no BOM', tsv.charCodeAt(0) === 0xfeff, false);
+eq('tsv: no trailing newline', /\n$/.test(tsv), false);
+
+// Embedded tabs and newlines would shift every later column, so they collapse.
+const messy = CSV.buildTsv([Object.assign({}, base, {
+  name: 'Two\tTabs\nAnd a break', website: 'unknown'
+})], { columns: ['name', 'website_status'] });
+eq('tsv: embedded tabs and newlines collapse',
+  messy.split('\n')[1], 'Two Tabs And a break\tunknown');
+eq('tsv: still one row', messy.split('\n').length, 2);
+
+// The injection guard applies to a paste just as it does to a file.
+eq('tsv: formula guard applies',
+  CSV.buildTsv([Object.assign({}, base, { name: '=cmd', website: 'unknown' })],
+    { columns: ['name'] }).split('\n')[1], "'=cmd");
+
 console.log(pass + ' passed, ' + fails.length + ' failed');
 if (fails.length) {
   fails.forEach((f) => console.log('  FAIL ' + f));

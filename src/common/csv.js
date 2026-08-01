@@ -103,14 +103,40 @@
     return "'" + value;
   }
 
-  /** A leading + or -, then only telephone punctuation, 6-20 digits total. */
-  const PHONE_LIKE = /^[+-][\d\s().\- ]{5,24}$/;
-
   /** Quote a single field per RFC 4180. */
   function field(value) {
     const s = neutralise(value == null ? '' : String(value));
     if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
+  }
+
+  /**
+   * Resolve the column set, preserving the canonical order.
+   *
+   * The picker stores which columns are on, not what order the user ticked
+   * them: a lead sheet whose columns move around between exports is worse than
+   * one with a fixed shape.
+   */
+  function resolveColumns(keys) {
+    if (!keys || !keys.length) return COLUMNS;
+    const wanted = {};
+    for (let i = 0; i < keys.length; i += 1) wanted[keys[i]] = true;
+    const picked = COLUMNS.filter((c) => wanted[c.key]);
+    // Never hand back a headerless file; an empty pick means the user has not
+    // chosen, not that they want nothing.
+    return picked.length ? picked : COLUMNS;
+  }
+
+  function cellsFor(row, cols) {
+    const out = new Array(cols.length);
+    for (let j = 0; j < cols.length; j += 1) {
+      try {
+        out[j] = cols[j].get(row);
+      } catch (_) {
+        out[j] = '';
+      }
+    }
+    return out;
   }
 
   /**
@@ -120,30 +146,44 @@
    */
   function build(rows, options) {
     const opts = options || {};
-    const cols = opts.columns
-      ? COLUMNS.filter((c) => opts.columns.indexOf(c.key) !== -1)
-      : COLUMNS;
+    const cols = resolveColumns(opts.columns);
 
     const lines = [cols.map((c) => field(c.header)).join(',')];
     for (let i = 0; i < rows.length; i += 1) {
-      const row = rows[i];
-      const cells = new Array(cols.length);
-      for (let j = 0; j < cols.length; j += 1) {
-        let v;
-        try {
-          v = cols[j].get(row);
-        } catch (_) {
-          v = '';
-        }
-        cells[j] = field(v);
-      }
-      lines.push(cells.join(','));
+      lines.push(cellsFor(rows[i], cols).map(field).join(','));
     }
 
     // CRLF terminators, including a trailing one: RFC 4180 allows it and some
     // importers are happier for it.
     const body = lines.join('\r\n') + '\r\n';
     return opts.bom === false ? body : '\uFEFF' + body;
+  }
+
+  /**
+   * Tab-separated text for pasting straight into a spreadsheet.
+   *
+   * Different rules from CSV, not a variant of it: a spreadsheet paste splits
+   * on tabs and newlines and does no quote processing at all, so quoting would
+   * paste literal quote marks into cells. Tabs and newlines inside a value are
+   * replaced with spaces instead \u2014 losing a line break in an address beats
+   * shifting every subsequent column.
+   *
+   * No BOM: this goes to the clipboard as text, not to a file.
+   */
+  function buildTsv(rows, options) {
+    const opts = options || {};
+    const cols = resolveColumns(opts.columns);
+
+    function tsvCell(value) {
+      const s = neutralise(value == null ? '' : String(value));
+      return s.replace(/[\t\r\n]+/g, ' ');
+    }
+
+    const lines = [cols.map((c) => tsvCell(c.header)).join('\t')];
+    for (let i = 0; i < rows.length; i += 1) {
+      lines.push(cellsFor(rows[i], cols).map(tsvCell).join('\t'));
+    }
+    return lines.join('\n');
   }
 
   /** `maps-leads-{query}-{yyyy-mm-dd}.csv` */
@@ -155,5 +195,20 @@
     return 'maps-leads-' + (q ? q + '-' : '') + stamp + '.csv';
   }
 
-  MLE.csv = { COLUMNS, build, filename, field, neutralise };
+  /** Columns a fresh install starts with: the pitch-relevant ones. */
+  const DEFAULT_KEYS = [
+    'name', 'category', 'rating', 'reviews', 'phone', 'website_status',
+    'website_url', 'address_line', 'full_address', 'distance_km', 'place_url'
+  ];
+
+  MLE.csv = {
+    COLUMNS,
+    DEFAULT_KEYS,
+    build,
+    buildTsv,
+    resolveColumns,
+    filename,
+    field,
+    neutralise
+  };
 })(typeof self !== 'undefined' ? self : this);

@@ -25,6 +25,8 @@
     'filters', 'filtersBadge', 'filtersCount', 'filtersReset', 'websiteSeg',
     'fMaxRating', 'fMaxReviews', 'fRadius', 'fCategory', 'fName', 'fKeepUnknown',
     'fExcludeExported', 'fExcludeExportedRow',
+    'copyBtn', 'columnsBtn', 'columnsPanel', 'columnsList',
+    'columnsAll', 'columnsDefault', 'columnsDone',
     'toast', 'rowTemplate'
   ].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -56,6 +58,9 @@
     el.exportBtn.title = msg('btnExport');
     el.clearBtn.title = msg('btnClear');
     el.clearBtn.setAttribute('aria-label', msg('btnClear'));
+    el.copyBtn.title = msg('btnCopy');
+    el.copyBtn.setAttribute('aria-label', msg('btnCopy'));
+    el.columnsBtn.setAttribute('aria-expanded', 'false');
   }
 
   /* ---------------------------------------------------------------------- list */
@@ -431,6 +436,9 @@
     }
 
     el.exportBtn.disabled = count === 0;
+    el.copyBtn.disabled = count === 0;
+    el.columnsBtn.title = msg('columnsBtn') + ' — ' + msg('columnsCount', [String(columnKeys.length)]);
+    el.columnsBtn.setAttribute('aria-label', el.columnsBtn.title);
 
     const paused = s.state === K.STATE.PAUSED;
     el.pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
@@ -649,6 +657,16 @@
    * Build the CSV in the panel rather than the worker: a document can mint a
    * blob URL, a service worker cannot.
    */
+  /**
+   * Distance is derived, not stored: stamped at output time against the centre
+   * the panel is actually showing, so it can never disagree with the UI.
+   */
+  function stampDistances(list) {
+    for (let i = 0; i < list.length; i += 1) {
+      list[i].distanceKm = MLE.geo.distanceFrom(centre, list[i]);
+    }
+  }
+
   function exportCsv() {
     if (!shown.length) {
       toast(msg('exportEmpty'));
@@ -659,15 +677,11 @@
     // meant; silently writing the unfiltered session would be a nasty surprise.
     const limit = MLE.entitlements.exportRowLimit();
     const slice = limit === Infinity ? shown : shown.slice(0, limit);
-    // Distance is derived, so it is stamped at export against the centre the
-    // panel is actually showing rather than stored per row.
-    for (let i = 0; i < slice.length; i += 1) {
-      slice[i].distanceKm = MLE.geo.distanceFrom(centre, slice[i]);
-    }
+    stampDistances(slice);
 
     let url;
     try {
-      const csv = MLE.csv.build(slice);
+      const csv = MLE.csv.build(slice, { columns: columnKeys });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       url = URL.createObjectURL(blob);
     } catch (err) {
@@ -734,6 +748,104 @@
     if (el.diag.open) renderDiagnostics(state, rows.length);
   });
   el.copyDiag.addEventListener('click', copyDiagnostics);
+
+  /* ------------------------------------------------ columns and clipboard */
+
+  /** Chosen column keys. Persisted so a sheet keeps its shape between runs. */
+  let columnKeys = MLE.csv.DEFAULT_KEYS.slice();
+
+  function loadColumns() {
+    try {
+      chrome.storage.local.get([K.STORAGE.COLUMNS], function (data) {
+        if (chrome.runtime.lastError) return;
+        const saved = data && data[K.STORAGE.COLUMNS];
+        if (Array.isArray(saved) && saved.length) columnKeys = saved;
+        buildColumnList();
+        render();
+      });
+    } catch (_) {
+      buildColumnList();
+    }
+  }
+
+  function saveColumns() {
+    try {
+      chrome.storage.local.set({ [K.STORAGE.COLUMNS]: columnKeys });
+    } catch (_) {
+      /* a failed preference write is not worth interrupting an export for */
+    }
+  }
+
+  function buildColumnList() {
+    el.columnsList.textContent = '';
+    MLE.csv.COLUMNS.forEach(function (col) {
+      const label = document.createElement('label');
+      label.className = 'fcheck';
+
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = columnKeys.indexOf(col.key) !== -1;
+      box.addEventListener('change', function () {
+        const at = columnKeys.indexOf(col.key);
+        if (box.checked && at === -1) columnKeys.push(col.key);
+        else if (!box.checked && at !== -1) columnKeys.splice(at, 1);
+        saveColumns();
+        render();
+      });
+
+      const text = document.createElement('span');
+      text.textContent = col.header;
+
+      label.appendChild(box);
+      label.appendChild(text);
+      el.columnsList.appendChild(label);
+    });
+  }
+
+  function setColumns(keys) {
+    columnKeys = keys.slice();
+    saveColumns();
+    buildColumnList();
+    render();
+  }
+
+  el.columnsBtn.addEventListener('click', function () {
+    el.columnsPanel.hidden = !el.columnsPanel.hidden;
+    el.columnsBtn.setAttribute('aria-expanded', el.columnsPanel.hidden ? 'false' : 'true');
+  });
+  el.columnsDone.addEventListener('click', function () {
+    el.columnsPanel.hidden = true;
+    el.columnsBtn.setAttribute('aria-expanded', 'false');
+  });
+  el.columnsAll.addEventListener('click', function () {
+    setColumns(MLE.csv.COLUMNS.map(function (c) { return c.key; }));
+  });
+  el.columnsDefault.addEventListener('click', function () {
+    setColumns(MLE.csv.DEFAULT_KEYS);
+  });
+
+  /**
+   * Clipboard TSV: the same rows and columns as the export, as text a
+   * spreadsheet pastes straight into cells.
+   */
+  function copyRows() {
+    if (!shown.length) {
+      toast(msg('exportEmpty'));
+      return;
+    }
+    stampDistances(shown);
+    const text = MLE.csv.buildTsv(shown, { columns: columnKeys });
+    navigator.clipboard.writeText(text).then(
+      function () {
+        toast(msg('copiedToast', [T.formatCount(shown.length)]));
+      },
+      function () {
+        toast(msg('copyFailed'), 'error');
+      }
+    );
+  }
+
+  el.copyBtn.addEventListener('click', copyRows);
 
   /* ---------------------------------------------------------- filter wiring */
 
@@ -975,6 +1087,9 @@
   }
 
   applyStaticText();
+  buildColumnList();
+  loadColumns();
+  syncWebsiteSeg();
   render();
   connect();
 })(typeof self !== 'undefined' ? self : this);

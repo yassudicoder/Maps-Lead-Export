@@ -78,7 +78,9 @@
     STORAGE: Object.freeze({
       SESSION: 'mle.session.v1',
       EXPORTS: 'mle.exports.v1',
-      EXPORTED_INDEX: 'mle.exportedIndex.v1'
+      EXPORTED_INDEX: 'mle.exportedIndex.v1',
+      COLUMNS: 'mle.columns.v1',
+      PRESETS: 'mle.presets.v1'
     }),
 
     /** Tri-state website presence. `unknown` is a first-class answer. */
