@@ -113,6 +113,9 @@
         dropped += 1;
         continue;
       }
+      // Stamped once, on arrival, so the panel never needs the index itself —
+      // shipping 50k ids to a side panel to render one badge would be absurd.
+      markExported(row);
       rows.set(row.placeId, row);
       index(row);
       added.push(row);
@@ -315,6 +318,26 @@
     }
   }
 
+  /**
+   * Note on the row whether this place has been exported before, and when.
+   * Only meaningful behind the crossSessionDedupe flag; the mark is harmless
+   * either way, and the panel decides whether to act on it.
+   */
+  function markExported(row) {
+    if (!MLE.exportedIndex || !row.placeId) return;
+    const when = MLE.exportedIndex.at(row.placeId);
+    if (when) row.exportedAt = when;
+  }
+
+  /** Re-stamp the whole session, e.g. after an export or an index clear. */
+  function restampExported() {
+    rows.forEach(function (row) {
+      delete row.exportedAt;
+      markExported(row);
+    });
+    schedulePersist();
+  }
+
   /** alias -> primary placeId, so a detail pane finds its row. */
   let aliasIndex = new Map();
 
@@ -364,6 +387,7 @@
     addRows: addRows,
     applyDetail: applyDetail,
     unresolvedCount: unresolvedCount,
+    restampExported: restampExported,
     countBy: function (predicate) {
       let n = 0;
       rows.forEach(function (row) {

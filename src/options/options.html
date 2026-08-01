@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maps Lead Export — Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="head">
+        <h1 data-i18n="optionsTitle">Maps Lead Export — Options</h1>
+        <p class="promise" data-i18n="optionsPrivacy"></p>
+      </header>
+
+      <section class="card">
+        <h2 data-i18n="optionsIndexHeading">Already-exported list</h2>
+        <p class="body" data-i18n="optionsIndexBody"></p>
+
+        <p class="stat" id="indexCount"></p>
+
+        <div class="actions">
+          <button type="button" class="btn" id="downloadIndex" data-i18n="optionsIndexDownload">
+            Download the list
+          </button>
+          <button type="button" class="btn btn-danger" id="clearIndex" data-i18n="optionsIndexClear">
+            Forget everything
+          </button>
+        </div>
+
+        <div class="confirm" id="confirm" hidden>
+          <p class="confirm-text" id="confirmText"></p>
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-quiet" id="confirmNo" data-i18n="btnClearNo">
+              Keep
+            </button>
+            <button type="button" class="btn btn-danger" id="confirmYes" data-i18n="btnClearYes">
+              Clear
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    </main>
+
+    <script src="../common/constants.js"></script>
+    <script src="../common/text.js"></script>
+    <script src="../common/csv.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

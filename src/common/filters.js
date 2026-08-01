@@ -23,6 +23,11 @@
       name: '', // substring, case-insensitive
       radiusKm: null, // keep rows within this many km of the centroid
       /**
+       * Hide places exported in a previous session. On by default: the whole
+       * point of keeping the index is not pitching the same business twice.
+       */
+      excludeExported: true,
+      /**
        * Whether a row whose value is unknown survives a numeric filter.
        * On by default: excluding unknowns is a claim we cannot support.
        */
@@ -30,6 +35,14 @@
     };
   }
 
+  /**
+   * Whether the user has narrowed anything explicitly.
+   *
+   * `excludeExported` is deliberately not counted: it is on by default, so
+   * including it would report an untouched filter set as active. What it hides
+   * is surfaced as a count instead, which is the honest way to show a default
+   * that removes rows.
+   */
   function isActive(f) {
     if (!f) return false;
     return (
@@ -60,10 +73,19 @@
   function apply(rows, f, ctx) {
     const out = [];
     let excludedUnknown = 0;
+    let excludedExported = 0;
     const centre = ctx && ctx.centre;
+    const dedupeOn = !ctx || ctx.crossSessionDedupe !== false;
 
     for (let i = 0; i < rows.length; i += 1) {
       const row = rows[i];
+
+      // Counted separately from the user's own filters: this one is on by
+      // default, so hiding rows silently would be the wrong kind of helpful.
+      if (dedupeOn && f.excludeExported && row.exportedAt) {
+        excludedExported += 1;
+        continue;
+      }
 
       if (f.website !== 'any' && row.website !== f.website) continue;
       if (!contains(row.category, f.category)) continue;
@@ -92,7 +114,11 @@
       out.push(row);
     }
 
-    return { rows: out, excludedUnknown: excludedUnknown };
+    return {
+      rows: out,
+      excludedUnknown: excludedUnknown,
+      excludedExported: excludedExported
+    };
   }
 
   /** How many rows each website state accounts for, for the filter chips. */

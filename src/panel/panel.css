@@ -455,6 +455,21 @@ body {
   gap: 8px;
 }
 
+/* Carried over from an earlier session's export. Quiet by design — it is
+   context, not a warning, and most rows will not have it. */
+.row-exported {
+  flex: none;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface-hover);
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+}
+
 .row-name {
   flex: 1;
   min-width: 0;

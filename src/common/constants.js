@@ -65,12 +65,20 @@
       CLEAR: 'clear',
       TOGGLE_PAUSE: 'togglePause',
       NOTE_EXPORT: 'noteExport',
-      DEBUG_REPORT: 'debugReport'
+      DEBUG_REPORT: 'debugReport',
+      // Options page <-> worker, over runtime.sendMessage rather than a port.
+      INDEX_STATS: 'indexStats',
+      INDEX_CLEAR: 'indexClear',
+      INDEX_DUMP: 'indexDump'
     }),
+
+    /** LRU cap on the cross-session exported index. */
+    EXPORTED_INDEX_MAX: 50000,
 
     STORAGE: Object.freeze({
       SESSION: 'mle.session.v1',
-      EXPORTS: 'mle.exports.v1'
+      EXPORTS: 'mle.exports.v1',
+      EXPORTED_INDEX: 'mle.exportedIndex.v1'
     }),
 
     /** Tri-state website presence. `unknown` is a first-class answer. */

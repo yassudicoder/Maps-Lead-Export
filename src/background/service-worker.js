@@ -14,6 +14,7 @@ importScripts(
   '../common/text.js',
   '../common/debug-log.js',
   '../common/place-id.js',
+  '../common/exported-index.js',
   '../common/selector-schema.js',
   '../common/entitlements.js',
   './session-store.js'
@@ -494,6 +495,21 @@ function handlePanel(port) {
         break;
 
       case K.MSG.NOTE_EXPORT:
+        Promise.all([store.load(), self.MLE.exportedIndex.load()]).then(function () {
+          // Record what just left the machine, so the next session can badge it.
+          const ids = msg.placeIds || [];
+          if (ids.length) {
+            const result = self.MLE.exportedIndex.add(ids);
+            self.MLE.debugLog.log('index:add', {
+              added: result.added,
+              refreshed: result.refreshed,
+              evicted: result.evicted,
+              size: self.MLE.exportedIndex.size()
+            });
+            store.restampExported();
+            broadcast({ type: K.MSG.SNAPSHOT, rows: store.all(), state: stateSnapshot() });
+          }
+        });
         store.load().then(function () {
           // Reconcile the file against the session in the log itself. A row
           // count that does not match should never again need a forensic
@@ -560,7 +576,44 @@ function noteExport(count) {
   });
 }
 
-// Warm the map and the session as soon as the worker spins up, so the first
-// click does not pay for the load.
+/* ------------------------------------------------- exported-index commands */
+
+chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+  if (!msg || !msg.type) return false;
+
+  if (msg.type === K.MSG.INDEX_STATS) {
+    self.MLE.exportedIndex.load().then(function () {
+      sendResponse({ size: self.MLE.exportedIndex.size(), max: K.EXPORTED_INDEX_MAX });
+    });
+    return true;
+  }
+
+  if (msg.type === K.MSG.INDEX_CLEAR) {
+    self.MLE.exportedIndex.load().then(function () {
+      const had = self.MLE.exportedIndex.size();
+      self.MLE.exportedIndex.clear();
+      self.MLE.debugLog.log('index:cleared', { had: had });
+      return store.load().then(function () {
+        store.restampExported();
+        broadcast({ type: K.MSG.SNAPSHOT, rows: store.all(), state: stateSnapshot() });
+        sendResponse({ cleared: had });
+      });
+    });
+    return true;
+  }
+
+  if (msg.type === K.MSG.INDEX_DUMP) {
+    self.MLE.exportedIndex.load().then(function () {
+      sendResponse({ entries: self.MLE.exportedIndex.all() });
+    });
+    return true;
+  }
+
+  return false;
+});
+
+// Warm the map, the session and the index as soon as the worker spins up, so
+// the first click does not pay for the load.
 loadSelectors();
 store.load();
+self.MLE.exportedIndex.load();

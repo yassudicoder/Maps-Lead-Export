@@ -24,6 +24,7 @@
     'openNext', 'openNextCount',
     'filters', 'filtersBadge', 'filtersCount', 'filtersReset', 'websiteSeg',
     'fMaxRating', 'fMaxReviews', 'fRadius', 'fCategory', 'fName', 'fKeepUnknown',
+    'fExcludeExported', 'fExcludeExportedRow',
     'toast', 'rowTemplate'
   ].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -76,6 +77,18 @@
     const name = node.querySelector('.row-name');
     name.textContent = row.name;
     name.title = row.name;
+
+    // Carried over from a previous session's export, so the user can see why
+    // a row is here (or ask why it is not).
+    const badge = node.querySelector('.row-exported');
+    if (row.exportedAt) {
+      badge.hidden = false;
+      badge.textContent = msg('rowExported');
+      badge.title = msg('rowExportedHint', [new Date(row.exportedAt).toLocaleDateString()]);
+    } else {
+      badge.hidden = true;
+      badge.title = '';
+    }
 
     const rating = node.querySelector('.row-rating');
     const ratingVal = node.querySelector('.row-rating-val');
@@ -199,14 +212,19 @@
   /** Median centre of the session, recomputed when the row set changes. */
   let centre = null;
   let lastExcludedUnknown = 0;
+  let lastExcludedExported = 0;
   /** Coverage is reported once per session, not on every recompute. */
   let coverageLogged = false;
 
   function recompute() {
     centre = MLE.geo.centroid(rows);
-    const result = MLE.filters.apply(rows, filters, { centre: centre });
+    const result = MLE.filters.apply(rows, filters, {
+      centre: centre,
+      crossSessionDedupe: MLE.entitlements.has('crossSessionDedupe')
+    });
     shown = result.rows;
     lastExcludedUnknown = result.excludedUnknown;
+    lastExcludedExported = result.excludedExported;
     list.setItems(shown);
   }
 
@@ -347,7 +365,16 @@
     const parts = [];
     if (active) parts.push(msg('filterShowing', [T.formatCount(shown.length), T.formatCount(rows.length)]));
     if (lastExcludedUnknown) parts.push(msg('filterExcludedUnknown', [T.formatCount(lastExcludedUnknown)]));
+    if (lastExcludedExported) {
+      parts.push(msg('filterExcludedExported', [T.formatCount(lastExcludedExported)]));
+    }
     el.filtersCount.textContent = parts.join(' · ');
+
+    el.fExcludeExported.checked = filters.excludeExported;
+    // Nothing to hide yet, so the control would only raise questions.
+    el.fExcludeExportedRow.hidden = !lastExcludedExported && !rows.some(function (r) {
+      return r.exportedAt;
+    });
 
     // A radius filter is meaningless without coordinates to measure from.
     el.fRadius.disabled = !centre;
@@ -664,7 +691,13 @@
         return;
       }
       toast(msg('exportedToast', [T.formatCount(slice.length)]));
-      send({ type: K.MSG.NOTE_EXPORT, count: slice.length });
+      send({
+        type: K.MSG.NOTE_EXPORT,
+        count: slice.length,
+        // What actually left the machine, so the index records exactly that
+        // and not the whole session.
+        placeIds: slice.map(function (r) { return r.placeId; }).filter(Boolean)
+      });
       revokeWhenDone(id, url);
     });
   }
@@ -727,6 +760,11 @@
   });
   el.fKeepUnknown.addEventListener('change', readFilters);
   el.fKeepUnknown.title = msg('filterKeepUnknownHint');
+  el.fExcludeExported.addEventListener('change', function () {
+    filters.excludeExported = el.fExcludeExported.checked;
+    recompute();
+    render();
+  });
 
   el.websiteSeg.addEventListener('click', function (event) {
     const btn = event.target && event.target.closest ? event.target.closest('[data-website]') : null;

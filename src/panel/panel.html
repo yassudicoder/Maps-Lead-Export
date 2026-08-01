@@ -71,6 +71,11 @@
             <span data-i18n="filterKeepUnknown">Keep rows where the value is unknown</span>
           </label>
 
+          <label class="fcheck" id="fExcludeExportedRow" hidden>
+            <input type="checkbox" id="fExcludeExported" checked />
+            <span data-i18n="filterExcludeExported">Hide places I exported before</span>
+          </label>
+
           <div class="filters-foot">
             <span class="filters-count" id="filtersCount"></span>
             <button type="button" class="btn btn-quiet" id="filtersReset" data-i18n="filterReset">
@@ -184,6 +189,7 @@
     <template id="rowTemplate">
       <div class="row" role="button" tabindex="0">
         <div class="row-top">
+          <span class="row-exported" hidden></span>
           <span class="row-name"></span>
           <span class="row-rating"><span class="star">&#9733;</span><span class="row-rating-val"></span></span>
         </div>
