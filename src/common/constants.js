@@ -47,6 +47,7 @@
       OPEN_ROW: 'openRow',
       // collector -> service worker -> panel
       OPEN_RESULT: 'openResult',
+      RELAY_REARM: 'relayRearm',
       DETAIL_EXHAUSTED: 'detailExhausted',
       GEO_COVERAGE: 'geoCoverage',
       // collector -> service worker
@@ -138,6 +139,15 @@
 
     /** Grace after the last read attempt before declaring the ladder spent. */
     DETAIL_LADDER_GRACE_MS: 400,
+
+    /** How long after activating before a URL that has not moved is a no-op. */
+    ACTIVATION_CHECK_MS: 1600,
+
+    /**
+     * How long a pruned-card scroll waits for Maps to re-render the target
+     * before the panel stops promising it is coming back.
+     */
+    RELINK_WINDOW_MS: 8000,
 
     /** Consecutive bad-health scans before we call the layout broken. */
     HEALTH_STRIKES: 2,

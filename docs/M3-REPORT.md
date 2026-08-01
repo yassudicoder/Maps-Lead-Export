@@ -92,6 +92,49 @@ than one that shows the source's own mistake.
 Recorded rather than closed silently, because "we looked and it is upstream" is
 a different answer from "we fixed it".
 
+## A6.1: anchored positioning (E2)
+
+The accelerator no longer refuses a card just because it has scrolled out of
+view. Both permitted paths are implemented:
+
+- **Off-viewport, still in the DOM** → position it, then activate, on the same
+  gesture. Reported as `positioned`.
+- **Pruned by Maps** → position the nearest surviving *collected* neighbour and
+  wait. Maps' lazy render brings the card back, the observer re-links it, and
+  the control re-arms. **Nothing is activated on this path** — re-arming means
+  pressable, not opened.
+
+"Nearest" is by the feed order recorded when each card was last seen, not by
+pixel position: the target is gone, so it has no pixel position. A card never
+seen in the current feed has no anchor and is refused rather than searched for,
+and `seenOrder` is cleared whenever the feed is replaced — anchoring to a stale
+index would scroll somewhere arbitrary, which is exactly what E2 forbids.
+
+**The red toast is gone.** Most of those states describe work in progress, and
+colouring them like errors called a working feature broken. Neutral chips now:
+"Bringing it into view…", "Restoring it — Maps is redrawing that card". Only a
+genuine dead end — the feed re-rendered by a new search — asks the user to do
+anything.
+
+**Every attempt is named.** `accel:ok {placeId, how}` or `accel:miss {placeId,
+reason}` with reason one of `not-rendered`, `pruned`, `activation-noop`,
+`pane-timeout`, `stale-gesture`, `busy`, `relink-timeout`. The chip shows the
+same word. "Sometimes it doesn't work" now resolves to a term in Copy
+diagnostics.
+
+`activation-noop` is new: a click that changed nothing used to be
+indistinguishable from one still loading, so it now checks after 1.6s whether
+the URL actually moved.
+
+Verified on live Maps, en-GB: "Cafe Emearald" sitting at top 753 against a feed
+bottom of 683 — genuinely off-viewport, and the exact case previously refused —
+positioned, activated, pane read, `detail` posted, on one gesture.
+
+Mutation-tested, because these are the boundaries E2 turns on:
+making the neighbour fallback also navigate fails
+`E2: the neighbour was not activated`; letting an unanchored target scroll
+anyway fails `E2: exactly one scroll per scrolling gesture`.
+
 ## A4: enforcement is live, the cap is not
 
 `BETA_ALL_FREE` stays `true`, so nothing is currently withheld. What changed is

@@ -818,6 +818,37 @@ body {
   filter: brightness(1.04);
 }
 
+/* Neutral by default: most of these describe work in progress, and colouring
+   them like errors would call a working feature broken. */
+.accel-chip {
+  margin: -3px 0 7px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.accel-chip[data-tone="working"]::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.accel-chip[data-tone="ask"] {
+  color: var(--flag);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accel-chip[data-tone="working"]::before {
+    animation: none;
+  }
+}
+
 .accel-count {
   font-variant-numeric: tabular-nums;
   font-weight: 600;

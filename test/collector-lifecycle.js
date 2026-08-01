@@ -40,13 +40,21 @@ global.clearInterval = function (id) {
 
 let observersMade = 0;
 let observersDisconnected = 0;
-global.MutationObserver = function () {
+/** The live observer callback, so a test can stand in for Maps redrawing. */
+let observerFn = null;
+global.MutationObserver = function (fn) {
   observersMade += 1;
+  observerFn = fn;
   this.observe = function () {};
   this.disconnect = function () {
     observersDisconnected += 1;
+    if (observerFn === fn) observerFn = null;
   };
 };
+
+function fireMutation() {
+  if (observerFn) observerFn([]);
+}
 
 global.location = {
   href: 'https://www.google.com/maps/search/cafe+in+malad',
@@ -58,13 +66,25 @@ const emptyFragment = { querySelector: () => null };
 // A feed has to actually exist, or detachFeed() has nothing to disconnect and
 // deleting it from teardown is invisible. That is precisely how the first
 // version of this file failed to catch the bug it was written for.
+/** Cards the stub feed is currently rendering. Swapped per E2 scenario. */
+let cards = [];
+
 const feedEl = {
   isConnected: true,
   children: { length: 12 },
   addEventListener: () => {},
   removeEventListener: () => {},
   querySelector: () => null,
-  querySelectorAll: () => []
+  // The parser asks for cards by selector and for place links inside them; the
+  // feed itself is also asked for place links when identity is being decided.
+  querySelectorAll: (sel) => {
+    if (/article|Nv2PK|:scope/.test(sel)) return cards.map((c) => c.card);
+    if (/place/.test(sel)) return cards.map((c) => c.link);
+    return [];
+  },
+  // Viewport is 0..600, so a card at top 2000 is genuinely off-screen and
+  // "should we scroll?" is a real decision rather than an assumption.
+  getBoundingClientRect: () => ({ top: 0, bottom: 600 })
 };
 
 global.document = {
@@ -181,9 +201,143 @@ eq('relay: a refusal does not latch the gate', lastOpenResult(), {
 eq('relay: collector never originates an open',
   sent.filter((m) => m.type === K.MSG.OPEN_ROW).length, 0);
 
-/* ---------------------------------------------------------------- teardown */
+/* ------------------------------------------------ E2: anchored positioning */
+
+// Three feed shapes, per the A6.1 fixture directive:
+//   1. the target is rendered but scrolled out of the viewport
+//   2. Maps has pruned the target, but collected neighbours survive
+//   3. the feed has been re-rendered entirely by a new search
+//
+// The stub feed reports geometry, so "off-viewport" is a real decision rather
+// than an assumption.
+const TARGET = '0x1111:0x1111';
+const NEIGHBOUR = '0x2222:0x2222';
+
+function makeCard(ftid, top) {
+  const link = {
+    tagName: 'A',
+    href: 'https://www.google.com/maps/place/X/data=!1s' + ftid +
+      '!16s%2Fg%2F' + ftid.slice(2, 8) + '!19sChIJ' + ftid.slice(2, 12) + 'abcd',
+    getAttribute: (n) => (n === 'href' ? link.href : n === 'aria-label' ? 'Test Place' : null),
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    clicked: 0,
+    click() { link.clicked += 1; }
+  };
+  const card = {
+    scrolledIntoView: 0,
+    getBoundingClientRect: () => ({ top: top, bottom: top + 80 }),
+    scrollIntoView() { card.scrolledIntoView += 1; },
+    querySelector: (sel) => (/place/.test(sel) ? link : null),
+    querySelectorAll: (sel) => (/place/.test(sel) ? [link] : []),
+    getElementsByTagName: () => [],
+    cloneNode: () => ({ children: [], querySelectorAll: () => [] })
+  };
+  return { card: card, link: link };
+}
+
+/**
+ * Run one E2 scenario against a freshly loaded collector.
+ *
+ * A fresh collector per scenario rather than a test seam on the production
+ * object: the relay lock is released only by a finished pane, and reaching in
+ * to unlatch it would be testing a hatch that does not ship.
+ */
+async function e2Scenario(build) {
+  if (global.__MLE_COLLECTOR__) global.__MLE_COLLECTOR__.teardown();
+  cards = [];
+  loadCollector();
+  init();
+  await sleep(220); // the scan debounce
+  return build();
+}
+
+async function rescan() {
+  fireMutation();
+  await sleep(220);
+}
+
+console.log('');
 
 (async () => {
+  /* 1. rendered but off-viewport -> position, then activate, one gesture */
+  const offscreen = makeCard(TARGET, 2000);
+  await e2Scenario(() => { cards = [offscreen]; });
+  await rescan();
+  sent.length = 0;
+  deliver({ type: K.MSG.OPEN_ROW, aliases: [TARGET], token: 'e2a', gestureAt: Date.now() });
+
+  const r1 = sent.filter((m) => m.type === K.MSG.OPEN_RESULT).pop();
+  eq('E2: off-viewport card is positioned', offscreen.card.scrolledIntoView, 1);
+  eq('E2: and activated on the same gesture', offscreen.link.clicked, 1);
+  eq('E2: reported as positioned', { ok: r1.ok, how: r1.how }, { ok: true, how: 'positioned' });
+
+  /* 1b. already visible -> no scroll at all */
+  const visible = makeCard(TARGET, 100);
+  await e2Scenario(() => { cards = [visible]; });
+  await rescan();
+  sent.length = 0;
+  deliver({ type: K.MSG.OPEN_ROW, aliases: [TARGET], token: 'e2b', gestureAt: Date.now() });
+  const r1b = sent.filter((m) => m.type === K.MSG.OPEN_RESULT).pop();
+  eq('E2: a visible card is not scrolled', visible.card.scrolledIntoView, 0);
+  eq('E2: and still activates', visible.link.clicked, 1);
+  eq('E2: reported as visible', r1b.how, 'visible');
+
+  /* 2. pruned target, surviving neighbour -> position it, navigate nothing */
+  const target2 = makeCard(TARGET, 100);
+  const neighbour = makeCard(NEIGHBOUR, 2000);
+  await e2Scenario(() => { cards = [target2, neighbour]; });
+  await rescan(); // both seen, so both have a recorded feed position
+  cards = [neighbour]; // Maps prunes the target
+  await rescan();
+
+  sent.length = 0;
+  deliver({ type: K.MSG.OPEN_ROW, aliases: [TARGET], token: 'e2c', gestureAt: Date.now() });
+  const r2 = sent.filter((m) => m.type === K.MSG.OPEN_RESULT).pop();
+  eq('E2: neighbour is positioned', neighbour.card.scrolledIntoView, 1);
+  eq('E2: pruned is reported, not a dead end',
+    { ok: r2.ok, reason: r2.reason }, { ok: false, reason: 'pruned' });
+  // The load-bearing one: a fallback scroll must navigate nowhere.
+  eq('E2: the neighbour was not activated', neighbour.link.clicked, 0);
+  eq('E2: and neither was the target', target2.link.clicked, 0);
+
+  // Maps re-renders the card; the observer re-links and the control re-arms.
+  sent.length = 0;
+  const restored = makeCard(TARGET, 300);
+  cards = [restored, neighbour];
+  await rescan();
+  const rearm = sent.filter((m) => m.type === K.MSG.RELAY_REARM).pop();
+  eq('E2: re-link re-arms the control', rearm && rearm.ok, true);
+  // Re-arming is not advancing: nothing opens without another human press.
+  eq('E2: re-arming opened nothing', restored.link.clicked, 0);
+  eq('E2: and scrolled nothing further', restored.card.scrolledIntoView, 0);
+
+  /* 3. feed re-rendered by a new search -> nothing to anchor to */
+  const stranger = makeCard('0x9999:0x9999', 100);
+  await e2Scenario(() => { cards = [stranger]; });
+  await rescan();
+  sent.length = 0;
+  deliver({ type: K.MSG.OPEN_ROW, aliases: [TARGET], token: 'e2d', gestureAt: Date.now() });
+  const r3 = sent.filter((m) => m.type === K.MSG.OPEN_RESULT).pop();
+  eq('E2: an unknown target cannot be anchored', r3.reason, 'not-rendered');
+  eq('E2: so nothing was scrolled', stranger.card.scrolledIntoView, 0);
+  eq('E2: and nothing was clicked', stranger.link.clicked, 0);
+
+  // One scroll per gesture across every path, and never a loop: two gestures
+  // scrolled (off-viewport, pruned-neighbour), two did not.
+  eq('E2: exactly one scroll per scrolling gesture',
+    offscreen.card.scrolledIntoView + visible.card.scrolledIntoView +
+    neighbour.card.scrolledIntoView + stranger.card.scrolledIntoView, 2);
+
+  /* ------------------------------------------------------------- teardown */
+
+  if (global.__MLE_COLLECTOR__) global.__MLE_COLLECTOR__.teardown();
+  cards = [];
+  loadCollector();
+  init();
+  // Every E2 scenario above loaded and tore down its own collector, so these
+  // counters are measured as deltas rather than absolutes.
+  const disconnectsBefore = portDisconnected;
   // Let the recheck tick attach the feed, so there is a live observer to stop.
   await sleep(1200);
   eq('running: feed observer attached', observersMade > 0, true);
@@ -193,7 +347,7 @@ eq('relay: collector never originates an open',
   ref.teardown();
 
   eq('teardown: clears the recheck interval', liveIntervals.size, 0);
-  eq('teardown: disconnects the port', portDisconnected, 1);
+  eq('teardown: disconnects the port', portDisconnected - disconnectsBefore, 1);
   eq('teardown: unregisters the collector', typeof global.__MLE_COLLECTOR__, 'undefined');
   eq('teardown: disconnects the feed observer', observersDisconnected, observersAtTeardown);
 
@@ -209,7 +363,7 @@ eq('relay: collector never originates an open',
 
   // Idempotent: a second call must do nothing rather than re-run the body.
   ref.teardown();
-  eq('teardown: second call is a no-op', portDisconnected, 1);
+  eq('teardown: second call is a no-op', portDisconnected - disconnectsBefore, 1);
 
   /* ---------------------------------------------------- re-injection guard */
 

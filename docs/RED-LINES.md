@@ -13,6 +13,19 @@ This file is the authority; the README table is a summary of it.
    synthetic relay of a fresh user gesture, per red line 8, is user-initiated
    and permitted. No "collect all results" automation.
 
+   **E2 amendment.** On the same 1:1 gesture, the target's card may be
+   `scrollIntoView`-ed when it is present in the DOM but off-viewport, and then
+   activated: one gesture buys one position and one navigation. If Maps has
+   pruned the target from the DOM, the same gesture may position the nearest
+   surviving *collected* neighbour, by stored feed order — Maps' own lazy render
+   restores the pruned card, the observer re-links it, and the control re-arms.
+   Re-arming means pressable, never opened.
+
+   Still prohibited: any scroll not anchored to a specific requested row,
+   scroll-to-load-more, scroll loops, and anything that advances without a fresh
+   gesture. A card never seen in the current feed has no anchor and is refused
+   rather than hunted for.
+
 3. **No CAPTCHA interaction.** If Maps shows one, the panel pauses collection
    and tells the user to slow down and solve it themselves.
 

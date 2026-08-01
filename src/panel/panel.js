@@ -21,7 +21,7 @@
     'exportBtn', 'pauseBtn', 'pauseIcon', 'clearBtn',
     'confirm', 'confirmText', 'confirmNo', 'confirmYes',
     'diag', 'healthLine', 'diagGrid', 'copyDiag',
-    'openNext', 'openNextCount',
+    'openNext', 'openNextCount', 'accelChip',
     'filters', 'filtersBadge', 'filtersCount', 'filtersReset', 'websiteSeg',
     'fMaxRating', 'fMaxReviews', 'fRadius', 'fCategory', 'fName', 'fKeepUnknown',
     'fExcludeExported', 'fExcludeExportedRow',
@@ -480,6 +480,16 @@
     const label = el.openNext.querySelector('.accel-label');
     label.textContent = s.relayBusy ? msg('btnOpenNextBusy') : msg('btnOpenNext');
     el.openNextCount.textContent = s.relayBusy ? '' : T.formatCount(remaining);
+
+    // The chip names what just happened, in the accelerator's own words rather
+    // than a red alert floating over the list.
+    if (relayChip) {
+      el.accelChip.hidden = false;
+      el.accelChip.textContent = msg(relayChip.key);
+      el.accelChip.dataset.tone = relayChip.tone;
+    } else {
+      el.accelChip.hidden = true;
+    }
   }
 
   function setAction(button, action) {
@@ -1098,6 +1108,8 @@
       toast(msg('accelNoneLeft'));
       return;
     }
+    // A fresh press supersedes whatever the last one had to say.
+    setRelayChip(null);
     requestOpen(row, 'accel');
   }
 
@@ -1113,13 +1125,32 @@
     openNext();
   });
 
-  const OPEN_FAILURE = {
-    'not-rendered': 'openNotRendered',
-    busy: 'openBusy',
-    'stale-gesture': 'openStale',
-    timeout: 'openTimeout',
-    disconnected: 'openDisconnected'
+  /**
+   * What the accelerator says about its own last attempt.
+   *
+   * These are chip states, not alerts. Most of them describe work in progress —
+   * Maps is being scrolled, or a pruned card is coming back — and a red toast
+   * for those read as failure when nothing had failed. Only the genuine dead
+   * end, a feed re-rendered out from under us, asks the user to do anything.
+   */
+  const RELAY_CHIP = {
+    positioned: { key: 'relayPositioning', tone: 'working' },
+    pruned: { key: 'relayRestoring', tone: 'working' },
+    'relink-timeout': { key: 'relayScrollToIt', tone: 'ask' },
+    'not-rendered': { key: 'relayScrollToIt', tone: 'ask' },
+    'activation-noop': { key: 'relayNoop', tone: 'ask' },
+    'pane-timeout': { key: 'relayPaneTimeout', tone: 'ask' },
+    'stale-gesture': { key: 'relayStale', tone: 'ask' },
+    busy: { key: 'relayBusyChip', tone: 'working' }
   };
+
+  /** Cleared on the next press, or when a pane finally reads. */
+  let relayChip = null;
+
+  function setRelayChip(reason) {
+    relayChip = reason ? RELAY_CHIP[reason] || { key: 'relayUnknown', tone: 'ask' } : null;
+    renderAccelerator(state);
+  }
 
   /**
    * Hand the user a self-contained report they can paste into an issue.
@@ -1176,11 +1207,17 @@
         state = message.state || state;
         render();
       } else if (message.type === K.MSG.OPEN_RESULT) {
-        // Success needs no announcement — the row fills in, which is the point.
-        // A refusal has to say which of the three constraints stopped it.
-        if (!message.ok) {
-          toast(msg(OPEN_FAILURE[message.reason] || 'openFailed'), 'error');
-        }
+        state = message.state || state;
+        // Success while positioning still shows a chip, because the user just
+        // watched Maps scroll and deserves to know that was us.
+        setRelayChip(message.ok ? (message.how === 'positioned' ? 'positioned' : null) : message.reason);
+        render();
+      } else if (message.type === K.MSG.RELAY_REARM) {
+        state = message.state || state;
+        // Re-armed: the card is back and the control is pressable. Nothing
+        // opens until the user presses again.
+        setRelayChip(message.ok ? null : 'relink-timeout');
+        render();
       } else if (message.type === K.MSG.DEBUG_REPORT) {
         const deliver = pendingReport;
         pendingReport = null;

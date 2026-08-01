@@ -80,7 +80,11 @@ const runtime = {
   /** A relay is dispatched and its pane has not finished. Gates the accelerator. */
   relayBusy: false,
   /** {day, count, rows} for the local calendar day. Loaded on start. */
-  exportUsage: null
+  exportUsage: null,
+  /** The accelerator press currently being answered, for attributing outcomes. */
+  lastAccel: null,
+  /** Why the last attempt did not open, so the chip can name it. */
+  relayReason: null
 };
 
 function resolveState() {
@@ -118,6 +122,7 @@ function stateSnapshot() {
     // Today's export tally, so the panel can gate before writing a file.
     exportUsage: runtime.exportUsage,
     relayBusy: runtime.relayBusy,
+    relayReason: runtime.relayReason,
     canRelay: collectors.size > 0 && !runtime.paused && !runtime.captcha
   };
 }
@@ -313,6 +318,8 @@ function handleCollector(port) {
         });
         // The pane finished. Whatever it yielded, the gate reopens.
         runtime.relayBusy = false;
+        runtime.relayReason = null;
+        runtime.lastAccel = null;
         store.load().then(function () {
           const row = store.applyDetail(msg.aliases || [], msg.patch || {});
           if (!row) {
@@ -360,21 +367,61 @@ function handleCollector(port) {
         // The pane never hydrated. The gate is open again; the accelerator
         // still waits for another human press before anything moves.
         self.MLE.debugLog.log('detail:exhausted', { url: (msg.url || '').slice(0, 80) });
+        if (runtime.lastAccel) {
+          self.MLE.debugLog.log('accel:miss', {
+            placeId: runtime.lastAccel.placeId,
+            reason: 'pane-timeout'
+          });
+        }
         runtime.relayBusy = false;
+        runtime.relayReason = 'pane-timeout';
         broadcastState();
         break;
 
       case K.MSG.OPEN_RESULT:
+        // Every accelerator attempt is named. "Sometimes it doesn't work" has
+        // to resolve to one of these words in Copy diagnostics, not a feeling.
+        if (runtime.lastAccel) {
+          if (msg.ok) {
+            self.MLE.debugLog.log('accel:ok', {
+              placeId: runtime.lastAccel.placeId,
+              how: msg.how || 'visible'
+            });
+          } else {
+            self.MLE.debugLog.log('accel:miss', {
+              placeId: runtime.lastAccel.placeId,
+              reason: msg.reason || 'unknown'
+            });
+          }
+        }
         self.MLE.debugLog.log('relay:' + (msg.ok ? 'dispatched' : msg.reason), {
-          token: msg.token
+          token: msg.token,
+          how: msg.how || null
         });
         // Busy only while a dispatch is actually outstanding. A refusal never
         // holds the gate shut — the user must be able to press again at once.
         runtime.relayBusy = !!msg.ok;
+        runtime.relayReason = msg.ok ? null : msg.reason || null;
         broadcast({
           type: K.MSG.OPEN_RESULT,
           ok: msg.ok,
           reason: msg.reason,
+          how: msg.how,
+          token: msg.token,
+          state: stateSnapshot()
+        });
+        break;
+
+      case K.MSG.RELAY_REARM:
+        // The pruned card came back (or the window closed). Either way the
+        // control becomes pressable again; nothing opens on its own.
+        self.MLE.debugLog.log(msg.ok ? 'accel:relinked' : 'accel:relink-timeout', {
+          placeId: runtime.lastAccel ? runtime.lastAccel.placeId : null
+        });
+        runtime.relayReason = msg.ok ? null : 'relink-timeout';
+        broadcast({
+          type: K.MSG.RELAY_REARM,
+          ok: msg.ok,
           token: msg.token,
           state: stateSnapshot()
         });
@@ -461,6 +508,9 @@ function handlePanel(port) {
       case K.MSG.OPEN_ROW: {
         if (msg.via === 'accel') {
           self.MLE.debugLog.log('accel:open', { placeId: msg.placeId || null });
+          runtime.lastAccel = { placeId: msg.placeId || null, at: Date.now() };
+        } else {
+          runtime.lastAccel = null;
         }
         const collector = collectors.values().next().value;
         if (!collector) {

@@ -82,6 +82,15 @@
   "rowStatusPartial": { "message": "partial" },
   "rowStatusPartialHint": { "message": "Read from the place page, but these were not shown: $FIELDS$", "placeholders": { "fields": { "content": "$1", "example": "phone, plusCode" } } },
   "rowStatusNeverHint": { "message": "Open this place in Maps to fill in website, phone and full address" },
+  "relayPositioning": { "message": "Bringing it into view…" },
+  "relayRestoring": { "message": "Restoring it — Maps is redrawing that card" },
+  "relayScrollToIt": { "message": "Scroll to it in Maps, then press again" },
+  "relayNoop": { "message": "Maps didn't respond to that one. Press again." },
+  "relayPaneTimeout": { "message": "The place page didn't finish loading. Press again." },
+  "relayStale": { "message": "That press expired. Try again." },
+  "relayBusyChip": { "message": "Still reading the last place" },
+  "relayUnknown": { "message": "That didn't open. Press again." },
+
   "capDailyReached": { "message": "That is today's $MAX$ exports. The allowance resets at midnight.", "placeholders": { "max": { "content": "$1", "example": "2" } } },
   "capRowsTruncated": { "message": "Exporting the first $LIMIT$ of $TOTAL$ rows", "placeholders": { "limit": { "content": "$1", "example": "25" }, "total": { "content": "$2", "example": "240" } } },
 

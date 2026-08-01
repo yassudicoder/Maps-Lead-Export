@@ -54,6 +54,16 @@
    * announced afterwards.
    */
   let lastIdentified = null;
+  /**
+   * identifier -> position in the feed when we last saw it rendered.
+   *
+   * This is what makes the pruned-card fallback anchored rather than a search:
+   * a card Maps has thrown away has no position, so its old neighbours are the
+   * only honest thing to scroll to. Cleared whenever the feed is replaced.
+   */
+  const seenOrder = new Map();
+  /** A pruned-card scroll is waiting for Maps to re-render the target. */
+  let awaitingRelink = null;
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -161,6 +171,16 @@
       // No denominator, so no health report and therefore no strike.
       return;
     }
+
+    // Record feed order for every row we can see, so a card that later gets
+    // pruned still has a place to be anchored near.
+    for (let i = 0; i < result.rows.length; i += 1) {
+      const row = result.rows[i];
+      if (row.placeId) seenOrder.set(row.placeId, i);
+      if (row.ftid) seenOrder.set(row.ftid, i);
+      if (row.mid) seenOrder.set(row.mid, i);
+    }
+    checkRelink();
 
     for (let i = 0; i < result.rows.length; i += 1) {
       const row = result.rows[i];
@@ -301,47 +321,165 @@
       return;
     }
 
-    // 3. Only cards Maps has already drawn. We never scroll to find one.
-    const anchor = findRenderedCard(msg.aliases || []);
-    if (!anchor) {
-      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'not-rendered', token: msg.token });
+    const aliases = msg.aliases || [];
+    const found = findRenderedCard(aliases);
+
+    if (found) {
+      // 3a. Present but off-screen: position it, then activate. E2 permits
+      // exactly this — one gesture buys one position and one navigation, and
+      // the scroll is anchored to the row the user asked for, never a sweep
+      // toward the bottom looking for more.
+      let positioned = false;
+      if (!isInView(found.card)) {
+        found.card.scrollIntoView({ block: 'center', inline: 'nearest' });
+        positioned = true;
+      }
+      activate(found.link, msg.token, positioned ? 'positioned' : 'visible');
       return;
     }
 
-    relayInFlight = { token: msg.token, at: Date.now() };
+    // 3b. Maps has pruned the card from the DOM. The same gesture may position
+    // the nearest surviving collected neighbour; Maps' own lazy render brings
+    // the target back, the observer re-links it, and the panel re-arms. We do
+    // not navigate here, and nothing advances without another human press.
+    const neighbour = findNearestRenderedNeighbour(aliases);
+    if (neighbour) {
+      neighbour.card.scrollIntoView({ block: 'center', inline: 'nearest' });
+      awaitingRelink = {
+        aliases: aliases.slice(),
+        token: msg.token,
+        at: Date.now()
+      };
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'pruned', token: msg.token });
+      return;
+    }
+
+    // 3c. Even the neighbours are gone — the feed has been re-rendered by a new
+    // search. There is nothing to anchor to, so we ask rather than hunt.
+    post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'not-rendered', token: msg.token });
+  }
+
+  /** Dispatch the activation and watch that it actually did something. */
+  function activate(link, token, how) {
+    relayInFlight = { token: token, at: Date.now(), url: location.href };
     if (relayTimer) clearTimeout(relayTimer);
     relayTimer = setTimeout(function () {
-      // The pane never arrived; release the lock rather than wedging it shut.
       relayInFlight = null;
-      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'timeout', token: msg.token });
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'pane-timeout', token: token });
     }, K.RELAY_TIMEOUT_MS);
 
-    post({ type: K.MSG.OPEN_RESULT, ok: true, token: msg.token });
-    anchor.click();
+    post({ type: K.MSG.OPEN_RESULT, ok: true, token: token, how: how });
+    link.click();
+
+    // An activation that changes nothing used to look identical to one still
+    // loading. Name it instead.
+    setTimeout(function () {
+      if (!relayInFlight || relayInFlight.token !== token) return;
+      if (location.href !== relayInFlight.url) return;
+      if (/\/maps\/place\//.test(location.pathname)) return;
+      releaseRelay();
+      post({ type: K.MSG.OPEN_RESULT, ok: false, reason: 'activation-noop', token: token });
+    }, K.ACTIVATION_CHECK_MS);
+  }
+
+  /** Is the card inside the feed's visible box? */
+  function isInView(card) {
+    if (!card || !feed) return false;
+    const c = card.getBoundingClientRect();
+    const f = feed.getBoundingClientRect();
+    return c.top >= f.top && c.bottom <= f.bottom;
   }
 
   /**
-   * Find the currently rendered card matching any of these identifiers.
-   *
-   * Reads only what is on screen. If the user has scrolled the card out of the
-   * feed there is no match and the panel says so — hunting for it by scrolling
-   * is exactly what the boundary in the E1 ruling forbids.
+   * Every rendered card, with its identifiers and position in the feed.
+   * One pass, reused by both lookups below.
    */
-  function findRenderedCard(aliases) {
-    if (!feed || !feed.isConnected || !aliases.length) return null;
+  function renderedCards() {
+    if (!feed || !feed.isConnected) return [];
     const cards = MLE.parserL1.pickAll(feed, selectors.feed.card);
-
+    const out = [];
     for (let i = 0; i < cards.length; i += 1) {
       const link = MLE.parserL1.pick(cards[i], selectors.feed.placeLink);
       if (!link) continue;
       const href = link.href || link.getAttribute('href') || '';
       const ids = MLE.placeId.extractIdentifiers(href, '');
-      for (let j = 0; j < aliases.length; j += 1) {
-        const a = aliases[j];
-        if (a && (a === ids.placeId || a === ids.ftid || a === ids.mid)) return link;
-      }
+      out.push({ card: cards[i], link: link, ids: ids });
+    }
+    return out;
+  }
+
+  function matchesAliases(ids, aliases) {
+    for (let j = 0; j < aliases.length; j += 1) {
+      const a = aliases[j];
+      if (a && (a === ids.placeId || a === ids.ftid || a === ids.mid)) return true;
+    }
+    return false;
+  }
+
+  /** The rendered card for these identifiers, or null. */
+  function findRenderedCard(aliases) {
+    if (!aliases.length) return null;
+    const rendered = renderedCards();
+    for (let i = 0; i < rendered.length; i += 1) {
+      if (matchesAliases(rendered[i].ids, aliases)) return rendered[i];
     }
     return null;
+  }
+
+  /**
+   * The surviving rendered card closest to where the target used to sit.
+   *
+   * "Closest" is by the feed order recorded when the card was last seen, not by
+   * pixel position — the target is gone, so it has no pixel position. Anything
+   * we have never seen in this feed cannot be anchored to and returns null,
+   * which is what keeps this from degenerating into a scan.
+   */
+  function findNearestRenderedNeighbour(aliases) {
+    let targetIndex = -1;
+    for (let j = 0; j < aliases.length && targetIndex < 0; j += 1) {
+      if (aliases[j] && seenOrder.has(aliases[j])) targetIndex = seenOrder.get(aliases[j]);
+    }
+    if (targetIndex < 0) return null;
+
+    const rendered = renderedCards();
+    let best = null;
+    let bestGap = Infinity;
+
+    for (let i = 0; i < rendered.length; i += 1) {
+      const ids = rendered[i].ids;
+      let index = -1;
+      const keys = [ids.placeId, ids.ftid, ids.mid];
+      for (let k = 0; k < keys.length && index < 0; k += 1) {
+        if (keys[k] && seenOrder.has(keys[k])) index = seenOrder.get(keys[k]);
+      }
+      if (index < 0) continue;
+      const gap = Math.abs(index - targetIndex);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = rendered[i];
+      }
+    }
+    return best;
+  }
+
+  /**
+   * After a pruned-card scroll, watch for the target coming back.
+   *
+   * Re-arming means the control becomes pressable again — never that anything
+   * opens. Advancing still costs a fresh human press, per red line 8.
+   */
+  function checkRelink() {
+    if (!awaitingRelink) return;
+    if (Date.now() - awaitingRelink.at > K.RELINK_WINDOW_MS) {
+      const stale = awaitingRelink;
+      awaitingRelink = null;
+      post({ type: K.MSG.RELAY_REARM, ok: false, token: stale.token });
+      return;
+    }
+    if (!findRenderedCard(awaitingRelink.aliases)) return;
+    const done = awaitingRelink;
+    awaitingRelink = null;
+    post({ type: K.MSG.RELAY_REARM, ok: true, token: done.token });
   }
 
   /** Cheap URL-change check, run from the existing recheck tick. */
@@ -391,6 +529,14 @@
     // Re-announce identity for the new element rather than inheriting the last
     // one's verdict.
     lastIdentified = null;
+    // Positions belong to the feed that produced them. A new search invalidates
+    // every one, and anchoring to a stale index would scroll somewhere
+    // arbitrary — which is the thing E2 forbids.
+    seenOrder.clear();
+    if (awaitingRelink) {
+      post({ type: K.MSG.RELAY_REARM, ok: false, token: awaitingRelink.token });
+      awaitingRelink = null;
+    }
 
     feedObserver = new MutationObserver(scheduleScan);
     feedObserver.observe(feed, { childList: true, subtree: true });
