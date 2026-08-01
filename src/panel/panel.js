@@ -21,6 +21,7 @@
     'exportBtn', 'pauseBtn', 'pauseIcon', 'clearBtn',
     'confirm', 'confirmText', 'confirmNo', 'confirmYes',
     'diag', 'healthLine', 'diagGrid', 'copyDiag',
+    'openNext', 'openNextCount',
     'toast', 'rowTemplate'
   ].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -349,8 +350,34 @@
     renderPauseIcon(paused);
 
     el.clearBtn.disabled = count === 0;
-
+    renderAccelerator(s);
     renderDiagnostics(s, count);
+  }
+
+  /**
+   * The accelerator control.
+   *
+   * Disabled while a pane is being read — that is red line 8's gate, surfaced
+   * so the user can see it rather than wonder why a press did nothing. The
+   * count is informational; pressing still opens exactly one.
+   */
+  function renderAccelerator(s) {
+    let remaining = 0;
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i];
+      if (!row.enrich && row.aliasRepair !== 'unrepairable' && row.website === K.WEBSITE.UNKNOWN) {
+        remaining += 1;
+      }
+    }
+
+    const usable = remaining > 0 && s.canRelay !== false;
+    el.openNext.hidden = !usable && !s.relayBusy;
+    el.openNext.disabled = !!s.relayBusy || !usable;
+    el.openNext.title = msg('btnOpenNextHint');
+
+    const label = el.openNext.querySelector('.accel-label');
+    label.textContent = s.relayBusy ? msg('btnOpenNextBusy') : msg('btnOpenNext');
+    el.openNextCount.textContent = s.relayBusy ? '' : T.formatCount(remaining);
   }
 
   function setAction(button, action) {
@@ -612,7 +639,7 @@
    */
   let openToken = 0;
 
-  function requestOpen(row) {
+  function requestOpen(row, via) {
     const aliases = [row.placeId, row.ftid, row.mid].filter(Boolean);
     if (!aliases.length) return;
     openToken += 1;
@@ -620,6 +647,8 @@
       type: K.MSG.OPEN_ROW,
       aliases: aliases,
       token: String(openToken),
+      placeId: row.placeId,
+      via: via || 'row',
       // Stamped here, at the gesture, so the collector can refuse anything
       // that is not the direct consequence of this click.
       gestureAt: Date.now()
@@ -643,6 +672,56 @@
     if (!row) return;
     event.preventDefault();
     requestOpen(row);
+  });
+
+  /* ------------------------------------------------- open-next accelerator */
+
+  /**
+   * The next row worth opening: still unresolved, and actually openable.
+   *
+   * Rows marked unrepairable are skipped — they can never match a pane, so
+   * offering them would strand the user on a row that cannot respond.
+   */
+  function nextUnenriched() {
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i];
+      if (row.enrich) continue;
+      if (row.aliasRepair === 'unrepairable') continue;
+      if (row.website !== K.WEBSITE.UNKNOWN) continue;
+      if (!row.placeId && !row.ftid && !row.mid) continue;
+      return row;
+    }
+    return null;
+  }
+
+  /**
+   * One press, one navigation.
+   *
+   * This is the accelerator in full. It picks the next row and fires exactly
+   * the same relay a row-click does. There is deliberately no loop, no queue
+   * and no timer here: the control re-enables when the pane finishes, and the
+   * next place opens only because a human pressed again.
+   */
+  function openNext() {
+    if (state.relayBusy || !state.canRelay) return;
+    const row = nextUnenriched();
+    if (!row) {
+      toast(msg('accelNoneLeft'));
+      return;
+    }
+    requestOpen(row, 'accel');
+  }
+
+  el.openNext.addEventListener('click', openNext);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter') return;
+    // Only when the press is not already meant for something else.
+    const active = document.activeElement;
+    if (active && active !== document.body && active.closest('.list, button, details, input')) return;
+    if (el.openNext.disabled) return;
+    event.preventDefault();
+    openNext();
   });
 
   const OPEN_FAILURE = {

@@ -44,6 +44,13 @@
       </main>
 
       <footer class="ft">
+        <!-- One press, one place. Deliberately singular: there is no batch
+             control here and none is planned (red lines 2 and 8). -->
+        <button type="button" class="btn btn-accel" id="openNext" hidden>
+          <span class="accel-label" data-i18n="btnOpenNext">Open next unenriched</span>
+          <span class="accel-count" id="openNextCount"></span>
+        </button>
+
         <div class="ft-actions">
           <button type="button" class="btn btn-primary" id="exportBtn" data-i18n="btnExport">
             Export CSV

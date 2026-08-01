@@ -543,6 +543,36 @@ body {
   gap: 6px;
 }
 
+/* The accelerator. Sits above the export row because it is the verb of the
+   enrich loop, but stays visually secondary to Export, which is the outcome. */
+.btn-accel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-bottom: 7px;
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.btn-accel:hover:not(:disabled) {
+  background: var(--accent-soft);
+  filter: brightness(1.04);
+}
+
+.accel-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  opacity: 0.75;
+  font-size: 11px;
+}
+
+.accel-count:empty {
+  display: none;
+}
+
 .btn {
   font: inherit;
   font-size: 12px;

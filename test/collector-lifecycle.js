@@ -166,6 +166,21 @@ eq('relay: unrendered card refused', lastOpenResult(), {
 });
 eq('relay: nothing scheduled a retry', liveIntervals.size, 1);
 
+// A refusal must not hold the gate shut. The user has to be able to press
+// again immediately, and a second refusal proves nothing latched.
+deliver({
+  type: K.MSG.OPEN_ROW, aliases: ['0xabc:0xdef'], token: 'fresh2', gestureAt: Date.now()
+});
+eq('relay: a refusal does not latch the gate', lastOpenResult(), {
+  type: K.MSG.OPEN_RESULT, ok: false, reason: 'not-rendered', token: 'fresh2'
+});
+
+// The accelerator's whole safety property, stated as a test: across every
+// message handled so far, the collector must never have originated an open of
+// its own. Only OPEN_RESULT replies exist, never a self-issued OPEN_ROW.
+eq('relay: collector never originates an open',
+  sent.filter((m) => m.type === K.MSG.OPEN_ROW).length, 0);
+
 /* ---------------------------------------------------------------- teardown */
 
 (async () => {

@@ -261,6 +261,20 @@
         }, delays[i])
       );
     }
+
+    // Ladder exhaustion is the other completion signal. Without this the lock
+    // would sit until the 12s relay timeout on any pane that never hydrates,
+    // and the accelerator would look frozen for five seconds longer than it
+    // needed to. Nothing here opens anything — it only releases the gate.
+    detailTimers.push(
+      setTimeout(function () {
+        if (stopped) return;
+        if (location.href !== openedUrl) return;
+        clearDetailTimers();
+        releaseRelay();
+        post({ type: K.MSG.DETAIL_EXHAUSTED, url: openedUrl });
+      }, delays[delays.length - 1] + K.DETAIL_LADDER_GRACE_MS)
+    );
   }
 
   /* -------------------------------------------------------------- relay (E1) */

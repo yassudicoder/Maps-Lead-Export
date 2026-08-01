@@ -75,7 +75,9 @@ const runtime = {
   lastClickWasMaps: null,
   droppedSelectors: [],
   feedIdentified: true,
-  viewingPlace: false
+  viewingPlace: false,
+  /** A relay is dispatched and its pane has not finished. Gates the accelerator. */
+  relayBusy: false
 };
 
 function resolveState() {
@@ -109,7 +111,9 @@ function stateSnapshot() {
       ratio: seen ? runtime.health.parsed / seen : null,
       idSources: runtime.health.idSources
     },
-    droppedSelectors: runtime.droppedSelectors
+    droppedSelectors: runtime.droppedSelectors,
+    relayBusy: runtime.relayBusy,
+    canRelay: collectors.size > 0 && !runtime.paused && !runtime.captcha
   };
 }
 
@@ -302,6 +306,8 @@ function handleCollector(port) {
           name: msg.name || '',
           fields: Object.keys(msg.patch || {})
         });
+        // The pane finished. Whatever it yielded, the gate reopens.
+        runtime.relayBusy = false;
         store.load().then(function () {
           const row = store.applyDetail(msg.aliases || [], msg.patch || {});
           if (!row) {
@@ -345,15 +351,27 @@ function handleCollector(port) {
         broadcastState();
         break;
 
+      case K.MSG.DETAIL_EXHAUSTED:
+        // The pane never hydrated. The gate is open again; the accelerator
+        // still waits for another human press before anything moves.
+        self.MLE.debugLog.log('detail:exhausted', { url: (msg.url || '').slice(0, 80) });
+        runtime.relayBusy = false;
+        broadcastState();
+        break;
+
       case K.MSG.OPEN_RESULT:
         self.MLE.debugLog.log('relay:' + (msg.ok ? 'dispatched' : msg.reason), {
           token: msg.token
         });
+        // Busy only while a dispatch is actually outstanding. A refusal never
+        // holds the gate shut — the user must be able to press again at once.
+        runtime.relayBusy = !!msg.ok;
         broadcast({
           type: K.MSG.OPEN_RESULT,
           ok: msg.ok,
           reason: msg.reason,
-          token: msg.token
+          token: msg.token,
+          state: stateSnapshot()
         });
         break;
 
@@ -436,6 +454,9 @@ function handlePanel(port) {
        * and the single-in-flight rule for itself.
        */
       case K.MSG.OPEN_ROW: {
+        if (msg.via === 'accel') {
+          self.MLE.debugLog.log('accel:open', { placeId: msg.placeId || null });
+        }
         const collector = collectors.values().next().value;
         if (!collector) {
           try {

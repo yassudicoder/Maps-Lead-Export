@@ -47,6 +47,7 @@
       OPEN_ROW: 'openRow',
       // collector -> service worker -> panel
       OPEN_RESULT: 'openResult',
+      DETAIL_EXHAUSTED: 'detailExhausted',
       // collector -> service worker
       HELLO: 'hello',
       ROWS: 'rows',
@@ -123,6 +124,9 @@
      * stops a pane that never arrives from wedging it shut.
      */
     RELAY_TIMEOUT_MS: 12000,
+
+    /** Grace after the last read attempt before declaring the ladder spent. */
+    DETAIL_LADDER_GRACE_MS: 400,
 
     /** Consecutive bad-health scans before we call the layout broken. */
     HEALTH_STRIKES: 2,
