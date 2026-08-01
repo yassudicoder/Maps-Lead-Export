@@ -123,6 +123,8 @@ global.chrome = {
 const path = require('node:path');
 require(path.join(__dirname, '..', 'src', 'common', 'debug-log.js'));
 require(path.join(__dirname, '..', 'src', 'common', 'place-id.js'));
+require(path.join(__dirname, '..', 'src', 'common', 'geo.js'));
+require(path.join(__dirname, '..', 'src', 'common', 'filters.js'));
 require(path.join(__dirname, '..', 'src', 'content', 'parser-level1.js'));
 require(path.join(__dirname, '..', 'src', 'background', 'session-store.js'));
 const L1 = global.MLE.parserL1;
@@ -242,6 +244,81 @@ eq('csv: partial row',
 // Kept and marked, never dropped.
 eq('csv: unrepairable row is exported and labelled',
   cell(Object.assign({}, base, { website: 'unknown', aliasRepair: 'unrepairable' }), 'enrich_status'), 'unrepairable');
+
+/* ----------------------------------------------------- geo and the filters */
+
+const GEO = global.MLE.geo;
+const F = global.MLE.filters;
+
+eq('geo: parses lat,lng', GEO.parse('19.1858849,72.83024'), { lat: 19.1858849, lng: 72.83024 });
+eq('geo: rejects rubbish', GEO.parse('not,coords'), null);
+eq('geo: rejects out-of-range', GEO.parse('91,0'), null);
+eq('geo: rejects empty', GEO.parse(''), null);
+
+// The Malad session with the Bandra outlier. A mean would be dragged south;
+// the median must stay in Malad.
+const maladRows = [
+  { geo: '19.1858,72.8302' }, { geo: '19.1911,72.8340' }, { geo: '19.1939,72.8379' },
+  { geo: '19.1890,72.8339' }, { geo: '19.0649,72.8324' } // Bandra, ~14km away
+];
+const centre = GEO.centroid(maladRows);
+eq('geo: centroid uses the median, not the mean', centre.lat, 19.189);
+eq('geo: centroid counts contributing rows', centre.from, 5);
+eq('geo: outlier is far from the centre', GEO.distanceFrom(centre, { geo: '19.0649,72.8324' }) > 12, true);
+eq('geo: a local row is near', GEO.distanceFrom(centre, { geo: '19.1890,72.8339' }) < 1, true);
+eq('geo: no coordinates means no distance', GEO.distanceFrom(centre, { geo: '' }), null);
+eq('geo: coverage', GEO.coverage([{ geo: '1,1' }, { geo: '' }, { geo: '2,2' }]),
+  { withGeo: 2, total: 3, rate: 0.67 });
+
+const fRows = [
+  { name: 'Alpha Cafe', category: 'Cafe', rating: 4.8, reviewCount: 500, website: 'has', geo: '19.1890,72.8339' },
+  { name: 'Beta Gym', category: 'Gym', rating: 3.2, reviewCount: 12, website: 'none', geo: '19.1891,72.8340' },
+  // The case the whole rule exists for: Maps showed no review count.
+  { name: 'Gamma Cafe', category: 'Cafe', rating: 4.1, reviewCount: null, website: 'unknown', geo: '19.1892,72.8341' },
+  { name: 'Delta Spa', category: 'Spa', rating: null, reviewCount: 3, website: 'unknown', geo: '' }
+];
+const fCentre = GEO.centroid(fRows);
+
+function run(patch) {
+  return F.apply(fRows, Object.assign(F.empty(), patch), { centre: fCentre });
+}
+
+eq('filter: inactive by default', F.isActive(F.empty()), false);
+eq('filter: empty keeps everything', run({}).rows.length, 4);
+eq('filter: website none', run({ website: 'none' }).rows.map((r) => r.name), ['Beta Gym']);
+eq('filter: website unknown is selectable',
+  run({ website: 'unknown' }).rows.map((r) => r.name), ['Gamma Cafe', 'Delta Spa']);
+eq('filter: category substring', run({ category: 'caf' }).rows.length, 2);
+eq('filter: name substring is case-insensitive', run({ name: 'BETA' }).rows.map((r) => r.name), ['Beta Gym']);
+eq('filter: rating at most', run({ maxRating: 4.2 }).rows.map((r) => r.name), ['Beta Gym', 'Gamma Cafe', 'Delta Spa']);
+
+// An unknown review count must not be treated as zero and swept into
+// "fewer than 50" - that is how a lead list silently gains businesses that
+// were never qualified.
+const kept = run({ maxReviews: 50 });
+eq('filter: unknown reviews kept by default', kept.rows.map((r) => r.name), ['Beta Gym', 'Gamma Cafe', 'Delta Spa']);
+eq('filter: nothing hidden while keepUnknown is on', kept.excludedUnknown, 0);
+
+// Only Gamma has an unknown review count. Delta's rating and coordinates are
+// missing but its review count is 3, so this filter knows enough to keep it —
+// unknown is per-field, not per-row.
+const dropped = run({ maxReviews: 50, keepUnknown: false });
+eq('filter: unknowns can be excluded deliberately',
+  dropped.rows.map((r) => r.name), ['Beta Gym', 'Delta Spa']);
+eq('filter: and the exclusion is counted', dropped.excludedUnknown, 1);
+
+eq('filter: radius keeps the near ones', run({ radiusKm: 1 }).rows.length, 4);
+eq('filter: a row without coordinates is unknown, not excluded',
+  run({ radiusKm: 1 }).rows.some((r) => r.name === 'Delta Spa'), true);
+eq('filter: excluding unknown coordinates is explicit',
+  run({ radiusKm: 1, keepUnknown: false }).rows.some((r) => r.name === 'Delta Spa'), false);
+
+eq('filter: tally', F.websiteTally(fRows), { has: 1, none: 1, unknown: 2 });
+
+eq('csv: distance blank without coordinates',
+  cell(Object.assign({}, base, { website: 'unknown' }), 'distance_km'), '');
+eq('csv: distance to one decimal',
+  cell(Object.assign({}, base, { website: 'unknown', distanceKm: 2.4 }), 'distance_km'), '2.4');
 
 console.log(pass + ' passed, ' + fails.length + ' failed');
 if (fails.length) {

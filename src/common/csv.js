@@ -40,6 +40,9 @@
     { key: 'place_id', header: 'place_id', get: (r) => r.placeId },
     { key: 'id_source', header: 'id_source', get: (r) => r.idSource },
     { key: 'source_query', header: 'source_query', get: (r) => r.query },
+    // Blank, never 0, when the row carries no coordinates: an unknown distance
+    // sorted as "nearest" would be actively misleading.
+    { key: 'distance_km', header: 'distance_km', get: (r) => (r.distanceKm == null ? '' : String(r.distanceKm)) },
     { key: 'enrich_status', header: 'enrich_status', get: (r) => enrichStatus(r) },
     { key: 'collected_at', header: 'collected_at', get: (r) => toIso(r.collectedAt) },
     /**

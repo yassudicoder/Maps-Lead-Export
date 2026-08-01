@@ -48,6 +48,7 @@
       // collector -> service worker -> panel
       OPEN_RESULT: 'openResult',
       DETAIL_EXHAUSTED: 'detailExhausted',
+      GEO_COVERAGE: 'geoCoverage',
       // collector -> service worker
       HELLO: 'hello',
       ROWS: 'rows',

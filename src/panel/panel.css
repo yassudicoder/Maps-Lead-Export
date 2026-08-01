@@ -182,6 +182,166 @@ body {
 
 /* ------------------------------------------------------------------ banner */
 
+/* ----------------------------------------------------------------- filters */
+
+.filters {
+  flex: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.filters-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.filters-summary::-webkit-details-marker {
+  display: none;
+}
+
+.filters-summary:hover {
+  color: var(--text);
+}
+
+.filters-badge {
+  padding: 0 5px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.filters .diag-caret {
+  margin-left: auto;
+}
+
+.filters-body {
+  padding: 2px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.fgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.flabel,
+.fnum > span,
+.ftext > span {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+/* Website tri-state. All four options are always visible: the whole point is
+   that "unknown" is a first-class answer, not a hidden default. */
+.segmented {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.segmented button {
+  flex: 1;
+  font: inherit;
+  font-size: 10.5px;
+  padding: 4px 2px;
+  border: 0;
+  border-right: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.segmented button:last-child {
+  border-right: 0;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.fgrid {
+  display: flex;
+  gap: 6px;
+}
+
+.fnum,
+.ftext {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fnum input,
+.ftext input {
+  font: inherit;
+  font-size: 11.5px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.fnum input:disabled {
+  opacity: 0.45;
+}
+
+.fnum input:focus-visible,
+.ftext input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.fcheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.fcheck input {
+  margin: 1px 0 0;
+  flex: none;
+}
+
+.filters-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters-count {
+  flex: 1;
+  min-width: 0;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
 .banner {
   display: flex;
   align-items: flex-start;

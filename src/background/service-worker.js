@@ -488,6 +488,11 @@ function handlePanel(port) {
         break;
       }
 
+      case K.MSG.GEO_COVERAGE:
+        // Once per session. The distance column is only as good as this.
+        self.MLE.debugLog.log('geo:coverage', msg.coverage || {});
+        break;
+
       case K.MSG.NOTE_EXPORT:
         store.load().then(function () {
           // Reconcile the file against the session in the log itself. A row

@@ -17,6 +17,69 @@
         <output class="hd-count" id="count" aria-live="off">0</output>
       </header>
 
+      <details class="filters" id="filters">
+        <summary class="filters-summary">
+          <span data-i18n="filtersTitle">Filters</span>
+          <span class="filters-badge" id="filtersBadge"></span>
+          <span class="diag-caret" aria-hidden="true">
+            <svg viewBox="0 0 12 12" width="10" height="10">
+              <path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor"
+                stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </summary>
+
+        <div class="filters-body">
+          <div class="fgroup">
+            <span class="flabel" data-i18n="filterWebsite">Website</span>
+            <div class="segmented" id="websiteSeg" role="group">
+              <button type="button" data-website="any" data-i18n="filterAny">Any</button>
+              <button type="button" data-website="none" data-i18n="websiteNone">No website</button>
+              <button type="button" data-website="unknown" data-i18n="filterUnknown">Unknown</button>
+              <button type="button" data-website="has" data-i18n="websiteHas">Website</button>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <label class="fnum">
+              <span data-i18n="filterMaxRating">Rating at most</span>
+              <input type="number" id="fMaxRating" min="0" max="5" step="0.1" inputmode="decimal" />
+            </label>
+            <label class="fnum">
+              <span data-i18n="filterMaxReviews">Reviews under</span>
+              <input type="number" id="fMaxReviews" min="0" step="1" inputmode="numeric" />
+            </label>
+            <label class="fnum">
+              <span data-i18n="filterRadius">Within km</span>
+              <input type="number" id="fRadius" min="0" step="0.5" inputmode="decimal" />
+            </label>
+          </div>
+
+          <div class="fgrid">
+            <label class="ftext">
+              <span data-i18n="filterCategory">Category contains</span>
+              <input type="text" id="fCategory" autocomplete="off" />
+            </label>
+            <label class="ftext">
+              <span data-i18n="filterName">Name contains</span>
+              <input type="text" id="fName" autocomplete="off" />
+            </label>
+          </div>
+
+          <label class="fcheck">
+            <input type="checkbox" id="fKeepUnknown" checked />
+            <span data-i18n="filterKeepUnknown">Keep rows where the value is unknown</span>
+          </label>
+
+          <div class="filters-foot">
+            <span class="filters-count" id="filtersCount"></span>
+            <button type="button" class="btn btn-quiet" id="filtersReset" data-i18n="filterReset">
+              Reset
+            </button>
+          </div>
+        </div>
+      </details>
+
       <div class="banner" id="banner" hidden>
         <div class="banner-body">
           <p class="banner-title" id="bannerTitle"></p>
@@ -138,6 +201,8 @@
 
     <script src="../common/constants.js"></script>
     <script src="../common/text.js"></script>
+    <script src="../common/geo.js"></script>
+    <script src="../common/filters.js"></script>
     <script src="../common/csv.js"></script>
     <script src="../common/entitlements.js"></script>
     <script src="virtual-list.js"></script>

@@ -22,6 +22,8 @@
     'confirm', 'confirmText', 'confirmNo', 'confirmYes',
     'diag', 'healthLine', 'diagGrid', 'copyDiag',
     'openNext', 'openNextCount',
+    'filters', 'filtersBadge', 'filtersCount', 'filtersReset', 'websiteSeg',
+    'fMaxRating', 'fMaxReviews', 'fRadius', 'fCategory', 'fName', 'fKeepUnknown',
     'toast', 'rowTemplate'
   ].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -189,12 +191,32 @@
     list.setRowHeight(contactMode ? ROW_HEIGHT_CONTACT : ROW_HEIGHT_PLAIN);
   }
 
+  /* -------------------------------------------------------------- filtering */
+
+  let filters = MLE.filters.empty();
+  /** Rows after filtering: what the list shows and what export writes. */
+  let shown = [];
+  /** Median centre of the session, recomputed when the row set changes. */
+  let centre = null;
+  let lastExcludedUnknown = 0;
+  /** Coverage is reported once per session, not on every recompute. */
+  let coverageLogged = false;
+
+  function recompute() {
+    centre = MLE.geo.centroid(rows);
+    const result = MLE.filters.apply(rows, filters, { centre: centre });
+    shown = result.rows;
+    lastExcludedUnknown = result.excludedUnknown;
+    list.setItems(shown);
+  }
+
   function setRows(next) {
     rows = next;
     indexOf.clear();
     for (let i = 0; i < rows.length; i += 1) indexOf.set(rows[i].placeId, i);
     syncRowHeight();
-    list.setItems(rows);
+    recompute();
+    reportCoverage();
   }
 
   function applyDelta(added, updated) {
@@ -207,8 +229,23 @@
       rows.push(added[i]);
     }
     syncRowHeight();
-    if (added.length) list.setItems(rows);
-    else if (updated.length) list.refresh();
+    // Filters apply to new rows too, so the visible set is always recomputed
+    // rather than appended to.
+    recompute();
+    reportCoverage();
+  }
+
+  /**
+   * Coordinate coverage, logged once per session.
+   *
+   * The distance column is only as trustworthy as this number. If half the rows
+   * carry no coordinates, a radius filter is holding half the session in
+   * "unknown", and that should be visible in diagnostics rather than inferred.
+   */
+  function reportCoverage() {
+    if (coverageLogged || rows.length < 5) return;
+    coverageLogged = true;
+    send({ type: K.MSG.GEO_COVERAGE, coverage: MLE.geo.coverage(rows) });
   }
 
   /** How many rows still have no confirmed answer on the website question. */
@@ -301,9 +338,25 @@
     }
   }
 
+  /** The filter summary line, and the badge on the collapsed control. */
+  function renderFilters() {
+    const active = MLE.filters.isActive(filters);
+    el.filtersBadge.textContent = active ? T.formatCount(shown.length) : '';
+    el.filtersBadge.hidden = !active;
+
+    const parts = [];
+    if (active) parts.push(msg('filterShowing', [T.formatCount(shown.length), T.formatCount(rows.length)]));
+    if (lastExcludedUnknown) parts.push(msg('filterExcludedUnknown', [T.formatCount(lastExcludedUnknown)]));
+    el.filtersCount.textContent = parts.join(' · ');
+
+    // A radius filter is meaningless without coordinates to measure from.
+    el.fRadius.disabled = !centre;
+    el.filters.hidden = rows.length === 0;
+  }
+
   function render() {
     const s = state;
-    const count = rows.length;
+    const count = shown.length;
 
     el.stateDot.dataset.tone = TONE[s.state] || 'idle';
     el.statusLine.textContent = msg(STATUS_KEY[s.state] || 'statusIdle');
@@ -321,7 +374,16 @@
       el.banner.hidden = true;
       el.resolve.hidden = true;
       el.stateView.hidden = false;
-      const empty = note || { title: msg('emptyTitle'), text: msg('emptyBody') };
+      // Filtered down to nothing is a different situation from having collected
+      // nothing, and telling the user to go scroll Maps would be wrong advice.
+      const filteredOut = rows.length > 0 && MLE.filters.isActive(filters);
+      const empty = filteredOut
+        ? {
+            title: msg('filterNoMatches'),
+            text: msg('filterNoMatchesBody'),
+            action: { label: msg('filterReset'), run: function () { el.filtersReset.click(); } }
+          }
+        : note || { title: msg('emptyTitle'), text: msg('emptyBody') };
       el.stateTitle.textContent = empty.title;
       el.stateText.textContent = empty.text;
       setAction(el.stateAction, empty.action);
@@ -349,9 +411,12 @@
     el.pauseBtn.setAttribute('aria-label', el.pauseBtn.title);
     renderPauseIcon(paused);
 
-    el.clearBtn.disabled = count === 0;
+    // Clearing throws away the whole session, not just what is on screen, so it
+    // follows the session count rather than the filtered one.
+    el.clearBtn.disabled = rows.length === 0;
+    renderFilters();
     renderAccelerator(s);
-    renderDiagnostics(s, count);
+    renderDiagnostics(s, rows.length);
   }
 
   /**
@@ -558,13 +623,20 @@
    * blob URL, a service worker cannot.
    */
   function exportCsv() {
-    if (!rows.length) {
+    if (!shown.length) {
       toast(msg('exportEmpty'));
       return;
     }
 
+    // Export what is on screen. A filter the user can see is a filter they
+    // meant; silently writing the unfiltered session would be a nasty surprise.
     const limit = MLE.entitlements.exportRowLimit();
-    const slice = limit === Infinity ? rows : rows.slice(0, limit);
+    const slice = limit === Infinity ? shown : shown.slice(0, limit);
+    // Distance is derived, so it is stamped at export against the centre the
+    // panel is actually showing rather than stored per row.
+    for (let i = 0; i < slice.length; i += 1) {
+      slice[i].distanceKm = MLE.geo.distanceFrom(centre, slice[i]);
+    }
 
     let url;
     try {
@@ -629,6 +701,62 @@
     if (el.diag.open) renderDiagnostics(state, rows.length);
   });
   el.copyDiag.addEventListener('click', copyDiagnostics);
+
+  /* ---------------------------------------------------------- filter wiring */
+
+  function numOrNull(input) {
+    const v = input.value.trim();
+    if (!v) return null;
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function readFilters() {
+    filters.maxRating = numOrNull(el.fMaxRating);
+    filters.maxReviews = numOrNull(el.fMaxReviews);
+    filters.radiusKm = numOrNull(el.fRadius);
+    filters.category = el.fCategory.value.trim();
+    filters.name = el.fName.value.trim();
+    filters.keepUnknown = el.fKeepUnknown.checked;
+    recompute();
+    render();
+  }
+
+  ['fMaxRating', 'fMaxReviews', 'fRadius', 'fCategory', 'fName'].forEach(function (id) {
+    el[id].addEventListener('input', readFilters);
+  });
+  el.fKeepUnknown.addEventListener('change', readFilters);
+  el.fKeepUnknown.title = msg('filterKeepUnknownHint');
+
+  el.websiteSeg.addEventListener('click', function (event) {
+    const btn = event.target && event.target.closest ? event.target.closest('[data-website]') : null;
+    if (!btn) return;
+    filters.website = btn.getAttribute('data-website');
+    syncWebsiteSeg();
+    recompute();
+    render();
+  });
+
+  function syncWebsiteSeg() {
+    const buttons = el.websiteSeg.querySelectorAll('[data-website]');
+    for (let i = 0; i < buttons.length; i += 1) {
+      const on = buttons[i].getAttribute('data-website') === filters.website;
+      buttons[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  el.filtersReset.addEventListener('click', function () {
+    filters = MLE.filters.empty();
+    el.fMaxRating.value = '';
+    el.fMaxReviews.value = '';
+    el.fRadius.value = '';
+    el.fCategory.value = '';
+    el.fName.value = '';
+    el.fKeepUnknown.checked = true;
+    syncWebsiteSeg();
+    recompute();
+    render();
+  });
 
   /**
    * Row click -> open that place in Maps (E1 ruling).
