@@ -287,9 +287,16 @@
       if (row.ftid || row.mid) return;
       const ids = MLE.placeId.extractIdentifiers(row.placeUrl || '', row.name);
       if (!ids.ftid && !ids.mid) {
+        // Keep it and mark it. This row can never be matched to a detail pane,
+        // so enrichment will appear to do nothing on it forever — which is
+        // exactly the kind of silence that cost a field cycle. Marking it says
+        // so on the row and in the export, and it is never dropped: "your
+        // existing leads are untouched" has to stay literally true.
+        row.aliasRepair = 'unrepairable';
         unrepairable += 1;
         return;
       }
+      row.aliasRepair = 'repaired';
       if (ids.ftid) row.ftid = ids.ftid;
       if (ids.mid) row.mid = ids.mid;
       if (ids.geo && !row.geo) row.geo = ids.geo;
@@ -357,6 +364,13 @@
     addRows: addRows,
     applyDetail: applyDetail,
     unresolvedCount: unresolvedCount,
+    countBy: function (predicate) {
+      let n = 0;
+      rows.forEach(function (row) {
+        if (predicate(row)) n += 1;
+      });
+      return n;
+    },
     setQuery: setQuery,
     clear: clear,
     isFull: isFull,

@@ -436,6 +436,14 @@ body {
   font-weight: 600;
 }
 
+/* Kept, exported, but permanently unmatchable. Struck through so it reads as
+   "this one will not resolve" rather than "this one is pending". */
+.row-status[data-state="unrepairable"] {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
 .diag-copy {
   margin-top: 8px;
   font-size: 11px;

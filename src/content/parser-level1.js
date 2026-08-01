@@ -51,6 +51,41 @@
     return el ? T.clean(el.textContent) : '';
   }
 
+  /**
+   * The business name, without the UI state Maps appends to it.
+   *
+   * The link's aria-label is the accessible name: the business plus whatever
+   * the interface needs to announce, e.g. "Love & Latte Malad · Visited link".
+   * That suffix is chrome, not data. Left in, it lands in the name column and
+   * makes one business look like two depending on whether the user had clicked
+   * it before.
+   *
+   * Resist the obvious fix. Stripping a trailing "· …" segment by pattern
+   * destroys real names — this very dataset contains "Tea Pea Café | Best Cafe
+   * in Malad | Goregaon" and "Blue Tokai Coffee Roasters | Malad West", and a
+   * business is perfectly entitled to a "·" in its name.
+   *
+   * So we do not pattern-match at all. The card also renders the plain name in
+   * its own element, with no UI suffix; that element is the source of truth.
+   * The aria-label is used only when it is unavailable, and then verbatim —
+   * an occasional stray suffix beats mangling names we cannot verify.
+   */
+  function resolveName(link, card, sel) {
+    const visible = textOf(pick(card, sel.card.name)) ||
+      T.clean(link.querySelector('span') ? link.querySelector('span').textContent : '');
+    const accessible = T.clean(link.getAttribute('aria-label'));
+
+    if (visible) {
+      // Trust the visible name when the accessible one merely decorates it.
+      if (!accessible || accessible === visible || accessible.indexOf(visible) === 0) {
+        return visible;
+      }
+      // They genuinely disagree: prefer the longer, which is the fuller name.
+      return accessible.length > visible.length ? accessible : visible;
+    }
+    return accessible;
+  }
+
   /* ---------------------------------------------------------------- place id */
 
   /**
@@ -206,7 +241,7 @@
     if (!link) return null;
 
     const href = link.href || link.getAttribute('href') || '';
-    const name = T.clean(link.getAttribute('aria-label')) || textOf(pick(card, sel.card.name));
+    const name = resolveName(link, card, sel);
     const id = extractIdentifiers(href, name);
 
     // Identity is non-negotiable: without both we cannot dedupe or attribute,
@@ -238,7 +273,12 @@
 
     const web = readWebsite(card, sel);
 
-    const provenance = { name: K.SOURCE.CARD, website: K.SOURCE.CARD };
+    // Provenance records where a value came FROM, so it may only be set where
+    // a value was actually determined. "unknown" is the absence of a finding,
+    // not a finding sourced from the card: claiming `website_source=card` for
+    // it would assert the card told us something it never did.
+    const provenance = { name: K.SOURCE.CARD };
+    if (web.website !== K.WEBSITE.UNKNOWN) provenance.website = K.SOURCE.CARD;
     if (category) provenance.category = K.SOURCE.CARD;
     if (addressLine) provenance.addressLine = K.SOURCE.CARD;
     if (rating != null) provenance.rating = K.SOURCE.CARD;

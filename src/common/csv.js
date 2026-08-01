@@ -40,6 +40,7 @@
     { key: 'place_id', header: 'place_id', get: (r) => r.placeId },
     { key: 'id_source', header: 'id_source', get: (r) => r.idSource },
     { key: 'source_query', header: 'source_query', get: (r) => r.query },
+    { key: 'enrich_status', header: 'enrich_status', get: (r) => enrichStatus(r) },
     { key: 'collected_at', header: 'collected_at', get: (r) => toIso(r.collectedAt) },
     /**
      * When the place's own page was read. Blank on Level-1 rows, which is the
@@ -49,6 +50,23 @@
     { key: 'enriched_at', header: 'enriched_at', get: (r) => toIso(r.enrichedAt) },
     { key: 'data_level', header: 'data_level', get: (r) => String(r.level || 1) }
   ];
+
+  /**
+   * Why a row does or does not carry confirmed detail, in one word.
+   *
+   * Mirrors the panel's per-row chip so the sheet and the UI agree:
+   *   confirmed    - a place page was read and gave everything expected
+   *   partial      - read, but the page did not show some fields
+   *   unrepairable - collected before aliasing and missing its identifiers, so
+   *                  opening the place can never match it. Kept and marked
+   *                  rather than dropped.
+   *   not_opened   - nobody has opened this place yet
+   */
+  function enrichStatus(r) {
+    if (r.enrich && r.enrich.state) return r.enrich.state === 'ok' ? 'confirmed' : r.enrich.state;
+    if (r.aliasRepair === 'unrepairable') return 'unrepairable';
+    return 'not_opened';
+  }
 
   function toIso(ms) {
     if (!ms) return '';

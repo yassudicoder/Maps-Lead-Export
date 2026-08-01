@@ -140,7 +140,13 @@
     // Before anything is enriched the third line is not drawn at all, and a
     // wall of "not opened" would be noise rather than signal.
     status.hidden = !contactMode;
-    if (!enrich) {
+    if (!enrich && row.aliasRepair === 'unrepairable') {
+      // Opening this place can never fill it in, so say that rather than
+      // leaving the user clicking at a row that will never respond.
+      status.dataset.state = 'unrepairable';
+      status.textContent = msg('rowStatusUnrepairable');
+      status.title = msg('rowStatusUnrepairableHint');
+    } else if (!enrich) {
       status.dataset.state = 'never';
       status.textContent = msg('rowStatusNever');
       status.title = msg('rowStatusNeverHint');

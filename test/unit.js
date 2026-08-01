@@ -209,6 +209,40 @@ function l1row(over) {
 function report() {
 /* ---------------------------------------------------------------------- report */
 
+/* ------------------------------------ provenance and enrich_status columns */
+
+// Values are comma-free on purpose so a plain split is safe here.
+function cell(row, column) {
+  const text = CSV.build([row], { bom: false });
+  const lines = text.trim().split('\r\n');
+  const idx = lines[0].split(',').indexOf(column);
+  return lines[1].split(',')[idx];
+}
+
+const base = {
+  placeId: 'ChIJz', idSource: 'place_id', name: 'Test Cafe', category: 'Cafe',
+  addressLine: 'Somewhere', rating: 4.1, reviewCount: 10, placeUrl: 'https://x',
+  query: 'cafe', collectedAt: 1750000000000, level: 1
+};
+
+// An undetermined website must claim no source: provenance says where a value
+// came from, and there is no value.
+eq('csv: unknown website has blank source',
+  cell(Object.assign({}, base, { website: 'unknown', provenance: { name: 'card' } }), 'website_source'), '');
+eq('csv: determined website carries its source',
+  cell(Object.assign({}, base, { website: 'none', provenance: { name: 'card', website: 'card' } }), 'website_source'), 'card');
+eq('csv: detail-sourced website says detail',
+  cell(Object.assign({}, base, { website: 'has', provenance: { website: 'detail' } }), 'website_source'), 'detail');
+
+eq('csv: unopened row', cell(Object.assign({}, base, { website: 'unknown' }), 'enrich_status'), 'not_opened');
+eq('csv: confirmed row',
+  cell(Object.assign({}, base, { website: 'has', enrich: { state: 'ok', missing: [] } }), 'enrich_status'), 'confirmed');
+eq('csv: partial row',
+  cell(Object.assign({}, base, { website: 'has', enrich: { state: 'partial', missing: ['phone'] } }), 'enrich_status'), 'partial');
+// Kept and marked, never dropped.
+eq('csv: unrepairable row is exported and labelled',
+  cell(Object.assign({}, base, { website: 'unknown', aliasRepair: 'unrepairable' }), 'enrich_status'), 'unrepairable');
+
 console.log(pass + ' passed, ' + fails.length + ' failed');
 if (fails.length) {
   fails.forEach((f) => console.log('  FAIL ' + f));

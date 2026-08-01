@@ -82,6 +82,8 @@
   "rowStatusPartial": { "message": "partial" },
   "rowStatusPartialHint": { "message": "Read from the place page, but these were not shown: $FIELDS$", "placeholders": { "fields": { "content": "$1", "example": "phone, plusCode" } } },
   "rowStatusNeverHint": { "message": "Open this place in Maps to fill in website, phone and full address" },
+  "rowStatusUnrepairable": { "message": "can't confirm" },
+  "rowStatusUnrepairableHint": { "message": "This lead was collected before the update and is missing the identifiers needed to match it to its place page. It is kept as-is — re-collect it to enable enrichment." },
   "rowStatusOkHint": { "message": "Read from the place's own page" },
   "rowOpenHint": { "message": "Click to open this place in Maps and fill in the rest" },
 

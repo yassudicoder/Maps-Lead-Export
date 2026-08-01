@@ -163,6 +163,73 @@ const SOURCES = [
   eq('chips: website has', r.row.website, 'has');
   eq('chips: reason is chip', r.row.websiteReason, 'chip');
 
+  /* --------------------------------------------------------- name suffix */
+
+  r = await run(`(function () {
+    function card(ariaLabel, visibleName) {
+      return '<div role="feed"><div><div role="article">' +
+        '<a class="hfpxzc" aria-label="' + ariaLabel + '" href="https://www.google.com/maps/place/X/data=!1s0x1:0x2!19sChIJabcdefghij">' +
+        '<span class="xxVWCe">' + visibleName + '</span></a>' +
+        '<div class="qBF1Pd fontHeadlineSmall">' + visibleName + '</div>' +
+        '</div></div></div>';
+    }
+    function nameOf(aria, visible) {
+      document.body.innerHTML = card(aria, visible);
+      var res = self.MLE.parserL1.parseFeed(document.querySelector('div[role="feed"]'), self.__SEL__, {});
+      return res.rows.length ? res.rows[0].name : null;
+    }
+    return {
+      visited: nameOf('Love &amp; Latte Malad · Visited link', 'Love &amp; Latte Malad'),
+      plain: nameOf('Love &amp; Latte Malad', 'Love &amp; Latte Malad'),
+      // Real names from the user's own exports. These must survive intact.
+      pipes: nameOf('Tea Pea Café | Best Cafe in Malad | Goregaon · Visited link',
+                    'Tea Pea Café | Best Cafe in Malad | Goregaon'),
+      pipes2: nameOf('Blue Tokai Coffee Roasters | Malad West',
+                     'Blue Tokai Coffee Roasters | Malad West'),
+      colonPipe: nameOf('Iron Paradise: Best Gym in Malad | Gym in Kandivali | Fitness Center',
+                        'Iron Paradise: Best Gym in Malad | Gym in Kandivali | Fitness Center'),
+      // No visible element: the accessible name is used verbatim rather than
+      // guessed at, because there is nothing to verify a strip against.
+      ariaOnly: (function () {
+        document.body.innerHTML = '<div role="feed"><div><div role="article">' +
+          '<a class="hfpxzc" aria-label="Solo Cafe" href="https://www.google.com/maps/place/X/data=!1s0x1:0x2!19sChIJabcdefghij"></a>' +
+          '</div></div></div>';
+        var res = self.MLE.parserL1.parseFeed(document.querySelector('div[role="feed"]'), self.__SEL__, {});
+        return res.rows.length ? res.rows[0].name : null;
+      })()
+    };
+  })()`);
+
+  eq('name: visited-link suffix dropped', r.visited, 'Love & Latte Malad');
+  eq('name: plain name unchanged', r.plain, 'Love & Latte Malad');
+  eq('name: pipe-separated name survives', r.pipes, 'Tea Pea Café | Best Cafe in Malad | Goregaon');
+  eq('name: trailing pipe segment survives', r.pipes2, 'Blue Tokai Coffee Roasters | Malad West');
+  eq('name: multi-pipe name survives', r.colonPipe,
+    'Iron Paradise: Best Gym in Malad | Gym in Kandivali | Fitness Center');
+  eq('name: aria-only falls back verbatim', r.ariaOnly, 'Solo Cafe');
+
+  /* ------------------------------------------------ website provenance */
+
+  r = await run(`(function () {
+    var feed = document.querySelector('div[role="feed"]');
+    return { consumerHasProvenance: null };
+  })()`);
+  await load('feed-consumer-en-GB.html');
+  r = await run(`(function () {
+    var res = self.MLE.parserL1.parseFeed(document.querySelector('div[role="feed"]'), self.__SEL__, {});
+    return res.rows[0].provenance;
+  })()`);
+  // "unknown" is the absence of a finding, so it must claim no source.
+  eq('provenance: unknown website claims no source', r.website, undefined);
+  eq('provenance: name still sourced', r.name, 'card');
+
+  await load('feed-sponsored-chips-en-US.html');
+  r = await run(`(function () {
+    var res = self.MLE.parserL1.parseFeed(document.querySelector('div[role="feed"]'), self.__SEL__, {});
+    return res.rows[0].provenance;
+  })()`);
+  eq('provenance: determined website is sourced', r.website, 'card');
+
   /* ------------------------------------------------------- feed identity */
 
   r = await run(`(function () {

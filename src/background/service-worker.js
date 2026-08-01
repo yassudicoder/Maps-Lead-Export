@@ -468,8 +468,24 @@ function handlePanel(port) {
       }
 
       case K.MSG.NOTE_EXPORT:
-        self.MLE.debugLog.log('export', { rows: msg.count || 0 });
-        noteExport(msg.count || 0);
+        store.load().then(function () {
+          // Reconcile the file against the session in the log itself. A row
+          // count that does not match should never again need a forensic
+          // session to explain — the gap and its cause are recorded here.
+          const held = store.size();
+          const written = msg.count || 0;
+          self.MLE.debugLog.log('export', {
+            rowsHeld: held,
+            rowsWritten: written,
+            gap: held - written,
+            capApplied: msg.capApplied || null,
+            unrepairable: store.countBy(function (r) {
+              return r.aliasRepair === 'unrepairable';
+            }),
+            unresolved: store.unresolvedCount()
+          });
+          noteExport(written);
+        });
         break;
 
       case K.MSG.DEBUG_REPORT:
