@@ -52,6 +52,7 @@
       ROWS: 'rows',
       DETAIL: 'detail',
       HEALTH: 'health',
+      FEED_IDENTITY: 'feedIdentity',
       CAPTCHA: 'captcha',
       CONTEXT: 'context',
       // panel <-> service worker
@@ -135,7 +136,13 @@
       PAUSED: 'paused',
       CAPTCHA: 'captcha',
       SESSION_FULL: 'sessionFull',
-      LAYOUT_CHANGED: 'layoutChanged'
+      LAYOUT_CHANGED: 'layoutChanged',
+      /**
+       * The tab is showing a place rather than a results list. Collection is
+       * simply not applicable here, so this must never accrue health strikes
+       * or read as a failure.
+       */
+      VIEWING_PLACE: 'viewingPlace'
     })
   });
 

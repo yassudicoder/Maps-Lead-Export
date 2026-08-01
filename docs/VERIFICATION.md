@@ -36,6 +36,7 @@ predated the code.
 | --- | --- | --- |
 | `test/unit.js` | parsing, CSV rules, merge semantics | anything needing a browser |
 | `test/migration.js` | pre-M2 sessions being repaired on load | a real `chrome.storage.local` |
+| `test/fixtures-run.js` | both parsers against frozen real DOM | today's Maps, which may have moved |
 | live-Maps parser runs | selectors against today's DOM | the worker, the store, the panel |
 | in-Chrome load harness | manifest, worker registration, panel render, console errors | the toolbar click, the activeTab grant, downloads landing on disk |
 
@@ -115,3 +116,28 @@ still for a second proves nothing.
 
 **Rule: any test written to catch a specific bug must be shown to fail when that
 bug is reintroduced.** A green test is evidence only after that.
+
+## Note: the feed-identity fix was not reproduced (2026-08-01)
+
+Task 0 of the M3 brief required a feed-misidentification fix. It is built and
+covered, but **the triggering state was never reproduced**, and that should be
+recorded rather than implied away.
+
+What was probed on live Maps, all with a warmed context: the reviews view inside
+a place, a deliberately empty results query, and six samples across the first
+four seconds of a results load. Every one produced either no `div[role="feed"]`
+at all or a feed already holding cards. The `cards.length ||
+feed.children.length` fallback never fired.
+
+The fix stands on its own reasoning: that fallback conflated "this is the
+results feed and nothing parsed" with "this element has children", and any
+feed-shaped element without place links would have scored 0% against a large
+denominator — two consecutive scans of which stop collection and tell the user
+Maps changed. Identity is now an explicit test, `seen` is only counted once it
+passes, and the regression is pinned in `test/fixtures-run.js` and
+mutation-tested.
+
+So: the defect in the code was real and is closed. The user-visible failure it
+would cause remains hypothetical here. If Yash saw the layout-changed banner in
+the field, the `feed:identity` events in Copy diagnostics will now say exactly
+what the element looked like.

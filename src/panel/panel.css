@@ -185,11 +185,38 @@ body {
 .banner {
   display: flex;
   align-items: flex-start;
+  /* The panel can be dragged to ~280px. Wrapping lets the action drop onto its
+     own line instead of being crushed against the message. */
+  flex-wrap: wrap;
   gap: 8px;
   padding: 9px 12px;
   background: var(--flag-soft);
   border-bottom: 1px solid var(--flag-border);
   flex: none;
+}
+
+/* Without this the action button inherits flex-shrink:1 and collapses against
+   the message text into a narrow multi-line lump. "Resume collecting" is the
+   worst case: two words, each wrapped, in a button barely wider than a word. */
+.banner .btn {
+  flex: none;
+  white-space: nowrap;
+  align-self: flex-start;
+  /* On the tinted banner a fully quiet button reads as floating text. A hairline
+     border is enough to say "control" without competing with the message. */
+  border-color: currentColor;
+  opacity: 0.9;
+}
+
+.banner .btn:hover:not(:disabled) {
+  opacity: 1;
+  background: rgb(0 0 0 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  .banner .btn:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.08);
+  }
 }
 
 .banner[data-tone="accent"] {

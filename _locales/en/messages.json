@@ -24,6 +24,9 @@
   "statusNotMaps": { "message": "Not a Google Maps tab" },
   "statusSessionFull": { "message": "Session full" },
   "statusLayoutChanged": { "message": "Maps layout changed" },
+  "statusViewingPlace": { "message": "Viewing a place" },
+  "viewingPlaceTitle": { "message": "Viewing a place" },
+  "viewingPlaceBody": { "message": "Collecting pauses while a single place is open — there is no results list to read. Go back to the results in Maps and it resumes on its own." },
 
   "emptyTitle": { "message": "No leads yet" },
   "emptyBody": { "message": "Scroll the Maps results list. Every business you see lands here automatically." },

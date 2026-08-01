@@ -1,0 +1,20 @@
+<!--
+  Real Google Maps results feed, captured 2026-07-31, query "plumbers in austin
+  tx", hl=en-US. Instrumentation attributes and images stripped.
+
+  This one is a SPONSORED card, which was not planned but is worth freezing —
+  it is the first sponsored result the parser has been measured against.
+
+  What this fixture pins:
+    - a service-vertical card WITH an action-chip row, so website is
+      determinable rather than "unknown"
+    - the Website chip's href is Google's own ad redirect (/aclk), NOT the
+      business site. `a[data-value="Website"]` still matches, so the row reads
+      "has" — but the off-Google-href fallback would reject /aclk, so the two
+      paths disagree here. If the fallback ever becomes primary, this card is
+      the regression case.
+    - a phone number rendered in the second info row (span.UsdlK)
+    - an aria-label="Sponsored" heading, currently not distinguished by the
+      parser (see the Proposals list in docs/M2-REPORT.md)
+-->
+<div role="feed" aria-label="Results for plumbers in austin tx"><div><div role="article" class="Nv2PK tH5CWc THOPZb "><a class="hfpxzc" aria-label="Quick Dry Restoration" href="https://www.google.com/maps/place/Quick+Dry+Restoration/data=!4m7!3m6!1s0x865b35a043318a2d:0x13029e355a6c8ae2!8m2!3d30.436203!4d-97.646804!16s%2Fg%2F11cn8vc3y0!19sChIJLYoxQ6A1W4YR4opsWjWeAhM"><span class="xxVWCe">Quick Dry Restoration</span></a><div class="rWbY0d"></div><div class="bfdHYd Ppzolf OFBs3e  Jv9l1d"><div class="rgFiGf OyjIsf "></div><div class="hHbUWd"><div class="OcdnDb "><h1 class="kpih0e f8ia3c uvopNe" aria-label="Sponsored"><span class="jHLihd lV5Ihd">Sponsored</span></h1></div></div><div class="rSy5If"></div><div class="lI9IFe Jv9l1d"><div class="y7PRA"><div class="Lui3Od T7Wufd "><div class="Z8fK3b"><div class="OyjIsf "></div><div class="UaQhfb fontBodyMedium"><div class="NrDZNb"><div class="dIDW9d"></div><span class="HTCGSb"></span><div class="qBF1Pd fontHeadlineSmall ">Quick Dry Restoration</div> <span class="muMOJe"></span></div><div class="HAthLd"></div><div class="W4Efsd"><div class="AJB7ye"><span class="wZrhX"></span> <span class="e4rVHe fontBodyMedium"><span role="img" class="ZkP5Je" aria-label="4.5 stars 375 Reviews"><span class="MW4etd" aria-hidden="true">4.5</span><div class="QBUL8c "></div><div class="QBUL8c "></div><div class="QBUL8c "></div><div class="QBUL8c "></div><div class="QBUL8c vIBWLc "></div><span class="UY7F9" aria-hidden="true">(375)</span></span></span></div></div><div class="W4Efsd"><div class="W4Efsd"><span><span>Water damage restoration service</span></span><span> <span aria-hidden="true">·</span> <span>1019 South Heatherwilde Boulevard</span></span></div><div class="W4Efsd"><span><span><span>Open 24 hours</span></span></span><span> <span aria-hidden="true">·</span> <span class="UsdlK">(737) 510-4639</span></span></div></div></div></div></div></div><div class="Rwjeuc"><div class="etWJQ jym1ob kdfrQc WY7ZIb"><a class="lcr4fd S9kvJb " aria-label="Visit Quick Dry Restoration's website" data-value="Website" href="/aclk"><span class="DVeyrd "><div class="OyjIsf zemfqc"></div><span class="Cw1rxd google-symbols" aria-hidden="true"></span></span><div class="R8c4Qb fontLabelMedium">Website</div></a></div><div class="etWJQ jym1ob kdfrQc WY7ZIb"><button class="S9kvJb " aria-label="Get directions to Quick Dry Restoration" data-value="Directions"><span class="DVeyrd "><div class="OyjIsf zemfqc"></div><span class="Cw1rxd google-symbols NhBTye G47vBd" aria-hidden="true"></span></span><div class="R8c4Qb fontLabelMedium">Directions</div></button></div></div><div class="SpFAAb"></div></div><div class="qty3Ue"><div class="AyRUI" aria-hidden="true">&nbsp; </div><div class="n8sPKe fontBodySmall oj2eXe ccePVe "><div class="Ahnjwc fontBodyMedium "><div class="Q4BGF"></div></div></div></div><div class="gwQ6lc"></div></div></div></div>

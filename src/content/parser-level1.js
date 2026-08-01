@@ -267,10 +267,55 @@
   }
 
   /**
+   * Is this element actually the results feed?
+   *
+   * `role="feed"` alone is not proof. Maps uses the role for other lists, and a
+   * results feed that has not rendered yet has children without being a usable
+   * feed. The load-bearing test is whether its subtree holds place links.
+   *
+   * This gates parse health. Without it, `seen` fell back to `children.length`
+   * for any feed-shaped element with no cards, which reports 0% parsed against
+   * a large denominator — enough to trip the "Maps layout changed" banner and
+   * stop collection over something that was never the results list.
+   *
+   * @returns {{isFeed: boolean, placeLinks: number, children: number}}
+   */
+  function identifyFeed(feed, sel) {
+    if (!feed) return { isFeed: false, placeLinks: 0, children: 0 };
+    const links = pickAll(feed, sel.feed.placeLink);
+    return {
+      isFeed: links.length > 0,
+      placeLinks: links.length,
+      children: feed.children ? feed.children.length : 0
+    };
+  }
+
+  /**
    * Parse every result card currently rendered in the feed.
-   * @returns {{rows: object[], stats: {seen:number, parsed:number, idSources:object}}}
+   *
+   * `stats.identified` is false when the element did not pass the identity
+   * test; the caller must not score parse health in that case, because there is
+   * nothing to have parsed.
+   *
+   * @returns {{rows: object[], stats: {seen:number, parsed:number,
+   *            identified:boolean, placeLinks:number, idSources:object}}}
    */
   function parseFeed(feed, sel, ctx) {
+    const identity = identifyFeed(feed, sel);
+    if (!identity.isFeed) {
+      return {
+        rows: [],
+        stats: {
+          seen: 0,
+          parsed: 0,
+          identified: false,
+          placeLinks: 0,
+          children: identity.children,
+          idSources: {}
+        }
+      };
+    }
+
     const cards = pickAll(feed, sel.feed.card);
     const rows = [];
     const idSources = {};
@@ -290,16 +335,28 @@
       }
     }
 
-    // If the card selectors matched nothing at all but the feed clearly holds
-    // content, report the children as seen-and-failed so parse health drops and
-    // the panel says the layout moved instead of showing an empty list.
-    const seen = cards.length || (feed.children ? feed.children.length : 0);
+    // Identity has already passed, so place links exist. If the card selectors
+    // matched none of them the layout really has moved, and the honest
+    // denominator is the number of place links we can see — not the child
+    // count, which includes headers, spacers and the end-of-list marker.
+    const seen = cards.length || identity.placeLinks;
 
-    return { rows: rows, stats: { seen: seen, parsed: parsed, idSources: idSources } };
+    return {
+      rows: rows,
+      stats: {
+        seen: seen,
+        parsed: parsed,
+        identified: true,
+        placeLinks: identity.placeLinks,
+        children: identity.children,
+        idSources: idSources
+      }
+    };
   }
 
   MLE.parserL1 = {
     parseFeed,
+    identifyFeed,
     parseCard,
     extractIdentifiers,
     aliasesOf,

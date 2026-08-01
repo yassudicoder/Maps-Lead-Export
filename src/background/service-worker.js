@@ -73,14 +73,22 @@ const runtime = {
   health: { seen: 0, parsed: 0, idSources: {} },
   lastInjectAt: 0,
   lastClickWasMaps: null,
-  droppedSelectors: []
+  droppedSelectors: [],
+  feedIdentified: true,
+  viewingPlace: false
 };
 
 function resolveState() {
   if (runtime.captcha) return K.STATE.CAPTCHA;
   if (runtime.layoutBroken) return K.STATE.LAYOUT_CHANGED;
   if (runtime.paused) return K.STATE.PAUSED;
-  if (collectors.size > 0) return store.isFull() ? K.STATE.SESSION_FULL : K.STATE.COLLECTING;
+  if (collectors.size > 0) {
+    if (store.isFull()) return K.STATE.SESSION_FULL;
+    // Viewing a place is a normal part of enriching, not a fault. It outranks
+    // "collecting" only so the panel can explain why no rows are arriving.
+    if (!runtime.feedIdentified && runtime.viewingPlace) return K.STATE.VIEWING_PLACE;
+    return K.STATE.COLLECTING;
+  }
   if (runtime.lastClickWasMaps === false) return K.STATE.NOT_MAPS;
   if (Date.now() - runtime.lastInjectAt < K.CONNECT_GRACE_MS) return K.STATE.CONNECTING;
   return K.STATE.DISCONNECTED;
@@ -309,6 +317,23 @@ function handleCollector(port) {
             state: stateSnapshot()
           });
         });
+        break;
+
+      case K.MSG.FEED_IDENTITY:
+        self.MLE.debugLog.log('feed:identity', {
+          identified: !!msg.identified,
+          placeLinks: msg.placeLinks || 0,
+          children: msg.children || 0,
+          viewingPlace: !!msg.viewingPlace
+        });
+        runtime.feedIdentified = !!msg.identified;
+        runtime.viewingPlace = !!msg.viewingPlace;
+        if (!msg.identified) {
+          // Not the results list, so any strikes accrued against it are void.
+          runtime.healthStrikes = 0;
+          runtime.health = { seen: 0, parsed: 0, idSources: {} };
+        }
+        broadcastState();
         break;
 
       case K.MSG.HEALTH:

@@ -48,6 +48,12 @@
   /** The one relayed row-click currently allowed to be outstanding, if any. */
   let relayInFlight = null;
   let relayTimer = 0;
+  /**
+   * Whether the last scan's element passed the results-feed identity test.
+   * Starts null so the first scan always reports, and only transitions are
+   * announced afterwards.
+   */
+  let lastIdentified = null;
 
   /* ------------------------------------------------------------------ helpers */
 
@@ -136,6 +142,25 @@
     }
 
     health = result.stats;
+
+    // An element with role="feed" that holds no place links is not the results
+    // list. Say so once per transition rather than scoring it as a total parse
+    // failure, which is what used to trip the layout-changed banner.
+    if (result.stats.identified !== lastIdentified) {
+      lastIdentified = result.stats.identified;
+      post({
+        type: K.MSG.FEED_IDENTITY,
+        identified: result.stats.identified,
+        placeLinks: result.stats.placeLinks || 0,
+        children: result.stats.children || 0,
+        viewingPlace: /\/maps\/place\//.test(location.pathname)
+      });
+    }
+
+    if (!result.stats.identified) {
+      // No denominator, so no health report and therefore no strike.
+      return;
+    }
 
     for (let i = 0; i < result.rows.length; i += 1) {
       const row = result.rows[i];
@@ -349,6 +374,9 @@
     // re-reports rows the worker may have never seen, and reset health.
     sent.clear();
     health = { seen: 0, parsed: 0, idSources: {} };
+    // Re-announce identity for the new element rather than inheriting the last
+    // one's verdict.
+    lastIdentified = null;
 
     feedObserver = new MutationObserver(scheduleScan);
     feedObserver.observe(feed, { childList: true, subtree: true });

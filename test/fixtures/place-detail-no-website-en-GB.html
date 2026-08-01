@@ -1,0 +1,18 @@
+<!--
+  Real Google Maps place detail pane, captured 2026-07-31, "Cafe Sentiments",
+  hl=en-GB. Reduced to the [data-item-id] rows, which is all parser-level2
+  reads. Instrumentation attributes and images stripped.
+
+  What this fixture pins:
+    - the pane is hydrated (address, phone and plus code all present) and
+      carries NO [data-item-id="authority"], so website must resolve to a
+      proven "none" rather than "unknown"
+    - the phone is readable straight from the attribute
+      (data-item-id="phone:tel:09967797857"), not from the rendered text
+    - the address must come from the element's text, not the aria-label, whose
+      "Address: " prefix is localised
+    - price-band rows carry data-item-id="0".."2", so "any data-item-id present"
+      is a weak hydration signal on its own; the parser requires the pane's
+      aria-label as well
+-->
+<div role="main" aria-label="Cafe Sentiments"><button class="CsEnBe" aria-label="Address: sentiments, mahavir building, near people’s Gym, Malad, Evershine Nagar, Malad West, Mumbai, Maharashtra 400064 " data-item-id="address" data-tooltip="Copy address"><div class="AeaXub"><div class="cXHGnc"><span class="google-symbols PHazN" aria-hidden="true"></span></div><div class="rogA2c "><div class="Io6YTe fontBodyMedium kR99db fdkmkc ">sentiments, mahavir building, near people’s Gym, Malad, Evershine Nagar, Malad West, Mumbai, Maharashtra 400064</div><div class="HMy2Jf"></div><div class="gSkmPd fontBodySmall CuiGbf DshQNd"></div></div></div></button><table><tbody><tr data-item-id="0"><td class="fsAi0e">₹1–200</td><td class="ktsRWd"><span role="img" class="QANbtc" aria-label="6%"><span class="xYsBQe"></span></span></td></tr><tr data-item-id="1"><td class="fsAi0e">₹200–400</td><td class="ktsRWd"><span role="img" class="QANbtc" aria-label="38%"><span class="xYsBQe"></span></span></td></tr><tr data-item-id="2"><td class="fsAi0e">₹400–600</td><td class="ktsRWd"><span role="img" class="QANbtc" aria-label="25%"><span class="xYsBQe"></span></span></td></tr></tbody></table><button class="CsEnBe" aria-label="Phone: 099677 97857 " data-item-id="phone:tel:09967797857" data-tooltip="Copy phone number"><div class="AeaXub"><div class="cXHGnc"><span class="google-symbols NhBTye PHazN" aria-hidden="true"></span></div><div class="rogA2c "><div class="Io6YTe fontBodyMedium kR99db fdkmkc ">099677 97857</div><div class="HMy2Jf"></div><div class="gSkmPd fontBodySmall CuiGbf DshQNd"></div></div></div></button><button class="CsEnBe" aria-label="Plus code: 5RRM+FJ Mumbai, Maharashtra" data-item-id="oloc" data-tooltip="Copy plus code"><div class="AeaXub"><div class="cXHGnc"><span class="google-symbols PHazN" aria-hidden="true"></span></div><div class="rogA2c "><div class="Io6YTe fontBodyMedium kR99db fdkmkc ">5RRM+FJ Mumbai, Maharashtra</div><div class="HMy2Jf"></div><div class="gSkmPd fontBodySmall CuiGbf DshQNd"></div></div></div></button></div>

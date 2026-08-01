@@ -244,6 +244,7 @@
   STATUS_KEY[K.STATE.NOT_MAPS] = 'statusNotMaps';
   STATUS_KEY[K.STATE.SESSION_FULL] = 'statusSessionFull';
   STATUS_KEY[K.STATE.LAYOUT_CHANGED] = 'statusLayoutChanged';
+  STATUS_KEY[K.STATE.VIEWING_PLACE] = 'statusViewingPlace';
 
   /**
    * What, if anything, needs explaining right now.
@@ -278,6 +279,13 @@
         return {
           title: msg('sessionFullTitle'),
           text: msg('sessionFullBody', [T.formatCount(s.max || K.SESSION_MAX_ROWS)])
+        };
+      case K.STATE.VIEWING_PLACE:
+        // Informational, not a fault: this is what enriching looks like.
+        return {
+          title: msg('viewingPlaceTitle'),
+          text: msg('viewingPlaceBody'),
+          tone: 'accent'
         };
       case K.STATE.PAUSED:
         return { title: msg('statusPaused'), text: msg('pausedNotice'), tone: 'accent' };
