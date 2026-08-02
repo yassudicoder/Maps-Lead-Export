@@ -195,11 +195,28 @@ chrome.action.onClicked.addListener(function (tab) {
 
 // The panel is opened explicitly above so that a click on a non-Maps tab can
 // still show the "open Maps to start" state instead of silently doing nothing.
-chrome.runtime.onInstalled.addListener(function () {
+chrome.runtime.onInstalled.addListener(function (details) {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(function () {
     /* older builds ignore this; the explicit open above still works */
   });
+  if (details && details.reason === 'install') stampInstall();
 });
+
+/**
+ * Record when this install first ran. Written once, never overwritten.
+ *
+ * Nothing reads it yet. It exists because it cannot be created retroactively:
+ * the product launches free, and if caps are ever introduced this is the only
+ * way to tell who was already here. An update must not reset it, so upgrades
+ * are ignored and an existing value is left alone.
+ */
+function stampInstall() {
+  chrome.storage.local.get([K.STORAGE.INSTALLED_AT], function (data) {
+    if (chrome.runtime.lastError) return;
+    if (data && data[K.STORAGE.INSTALLED_AT]) return;
+    chrome.storage.local.set({ [K.STORAGE.INSTALLED_AT]: Date.now() });
+  });
+}
 
 /* ------------------------------------------------------------------- health */
 

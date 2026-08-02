@@ -80,6 +80,15 @@
       SESSION: 'mle.session.v1',
       EXPORTS: 'mle.exports.v1',
       EXPORTED_INDEX: 'mle.exportedIndex.v1',
+      /**
+       * When this install first ran. Written once, never overwritten.
+       *
+       * The product launches free and premium is deferred; if caps are ever
+       * introduced, this is the only way to tell who was here before them.
+       * It cannot be backdated, so it is recorded from the first release even
+       * though nothing reads it yet.
+       */
+      INSTALLED_AT: 'mle.installedAt.v1',
       COLUMNS: 'mle.columns.v1',
       PRESETS: 'mle.presets.v1'
     }),

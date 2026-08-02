@@ -1,12 +1,14 @@
 /**
  * Entitlement scaffold.
  *
- * M1 ships the shape, not the gate: BETA_ALL_FREE is true, so every call
- * returns "allowed" and the panel never nags. M3 flips the constant and wires
- * the caps to real state; nothing else in the codebase should need to change,
- * because callers already ask this module instead of testing flags inline.
+ * The shape, not the gate. BETA_ALL_FREE is true, so every call returns
+ * "allowed" and the panel never nags. The cap machinery below is built and
+ * tested but inert, so turning it on later changes one constant rather than
+ * threading flags through the codebase — callers already ask this module.
  *
- * There is no payment code here and none is planned for the MVP.
+ * There is no payment code here and none is planned.
+ *
+ * See docs/MONETIZATION.md for the decision this encodes.
  */
 (function (root) {
   'use strict';
@@ -14,7 +16,15 @@
   const MLE = (root.MLE = root.MLE || {});
   const K = MLE.K;
 
-  /** While true, every Pro flag reads as granted. */
+  /**
+   * While true, every Pro flag reads as granted. Decided 2026-08-02: the
+   * product launches free and premium is revisited around 2027-02.
+   *
+   * Flipped by a human, in a release, with a version bump — never compared
+   * against a date at runtime. A timer here would mean the extension quietly
+   * starts refusing to do what it did yesterday, on a machine nobody touched,
+   * for a user who never agreed to it.
+   */
   const BETA_ALL_FREE = true;
 
   /**
