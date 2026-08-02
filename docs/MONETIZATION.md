@@ -9,6 +9,7 @@ Ruled 2026-08-02 by Yash. Settled unless he reopens them.
 | Grandfathering | Approved. Pre-flip installs keep their tier, identified by install timestamp |
 | Premium model | **Additive**, not restrictive. New capability, never clawed-back rows |
 | Part B (API enrich) | Parked |
+| Tier-versioning | Deferred until a *second* flip is contemplated |
 | Revisit | End of M4, with usage data |
 
 ## 1. Everything is free until roughly 2027-02
@@ -45,13 +46,27 @@ late to start recording it.
 `mle.installedAt.v1` — written once on first install, never overwritten, ignored
 on update.
 
-> **Flag for whoever designs the flip.** "As it stood at their install" is a
-> claim about the tier, and the timestamp only records the date. That is
-> sufficient *provided the tier definition is versioned in the changelog*, so a
-> date can be resolved to a tier without archaeology. If a second flip ever
-> happens, resolve installs against a recorded tier version rather than a date
-> range. Not built, deliberately — the ruling names the timestamp as the
-> identifier and one flip needs nothing more.
+**Tier-versioning: deferred, 2026-08-02.** "As it stood at their install" is a
+claim about the tier, and the timestamp records only a date. For the *first*
+flip that resolves through the changelog — date in, tier-live-at-that-date out —
+and no tier-version object is needed.
+
+Introduce one only if and when a **second** flip is contemplated, at which point
+date ranges stop being a clean lookup. Building it now is premature: unlike the
+timestamp, it carries no irreversibility fuse and can be added at any point
+before that second flip.
+
+### The rule these two calls establish
+
+Both went the same way for the same reason, and it is worth naming so the next
+one is quick:
+
+> Ship a thing early **only when skipping it is irreversible.**
+
+The install timestamp cannot be backdated, so it shipped before anything reads
+it. A tier-version object can be added whenever it is first needed, so it waits.
+"We will probably want this later" is not the test; "we will be unable to have
+this later" is.
 
 ### Preferred model: additive, not restrictive — ruled, 2026-08-02
 
@@ -61,8 +76,9 @@ Named candidates, neither specified nor built:
 
 - **API enrich** (Part B) — genuinely new capability, and it costs the user real
   money at Google either way, so it prices itself honestly.
-- **Audit-lite score** — named by Yash; scope not yet defined, and not invented
-  here.
+- **Audit-lite score** — named by Yash. **Scope is defined at the end of M4, not
+  before**, and is not to be invented in the meantime. It appears here as a
+  placeholder for a decision, not as a feature awaiting specification.
 
 The consequence worth stating plainly: **if additive covers the business, the
 25×2 cap may never bind at all.** The cap machinery stays built, tested and
