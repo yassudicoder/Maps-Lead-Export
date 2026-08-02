@@ -14,7 +14,11 @@
       content="A Chrome side panel that turns the Google Maps results you are already looking at into a clean CSV lead list. Local-first, honest about unknowns, free during beta."
     />
     <meta property="og:type" content="website" />
+    <!-- At deploy: make og:image absolute and add og:url — share previews
+         mostly resolve only absolute image URLs. -->
     <meta property="og:image" content="og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF9F6" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121118" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -94,16 +98,16 @@
       <section class="hero wrap" data-letter="A">
         <p class="kicker mono">Coming to the Chrome Web Store · free during beta</p>
 
-        <h1 class="tagline">
+        <div class="tagline-row">
           <button
             class="bom"
             type="button"
             data-pop="pop-bom"
             aria-expanded="false"
-            aria-label="UTF-8 byte-order mark"
-          >FEFF</button
-          ><span class="tagline-text">Export what you see<span class="stop">.</span></span>
-        </h1>
+            aria-label="FEFF — the UTF-8 byte-order mark"
+          >FEFF</button>
+          <h1 class="tagline">Export what you see<span class="stop">.</span></h1>
+        </div>
         <span class="pop mono" role="note" id="pop-bom" hidden
           >U+FEFF, the UTF-8 byte-order mark. Every exported file starts with it, so Excel opens it
           clean.</span
@@ -130,11 +134,12 @@
               required
               placeholder="you@studio.example"
               autocomplete="email"
+              aria-describedby="wl-msg-1"
             />
             <button class="btn-ghost" type="submit">Get one email when it ships<span class="stop">.</span></button>
           </div>
           <p class="waitlist-note mono">No account. No list beyond that one email.</p>
-          <p class="waitlist-msg mono" role="status" aria-live="polite" hidden></p>
+          <p class="waitlist-msg mono" role="status" id="wl-msg-1"></p>
         </form>
       </section>
 
@@ -152,7 +157,7 @@
                   <p class="mcard-chips"><span class="mcard-chip">Directions</span><span class="mcard-chip mcard-chip-site">Website</span></p>
                 </div>
                 <div class="mcard" data-row="1">
-                  <p class="mcard-name devanagari">शर्मा मिठाई भंडार</p>
+                  <p class="mcard-name devanagari" lang="hi">शर्मा मिठाई भंडार</p>
                   <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.9 <span class="mcard-dim">(85)</span> · Sweet shop</p>
                   <p class="mcard-line">Open · Closes 9&nbsp;pm</p>
                   <p class="mcard-chips"><span class="mcard-chip">Directions</span></p>
@@ -216,7 +221,7 @@
                     <td><span class="chip chip-has">has</span></td>
                   </tr>
                   <tr class="lrow landed" data-row="1">
-                    <td class="devanagari">शर्मा मिठाई भंडार</td>
+                    <td class="devanagari" lang="hi">शर्मा मिठाई भंडार</td>
                     <td>Sweet shop</td>
                     <td class="num">4.9</td>
                     <td class="num">85</td>
@@ -233,7 +238,7 @@
                     <td>The Copper Kettle</td>
                     <td>Restaurant</td>
                     <td class="num">4.4</td>
-                    <td class="num"><span class="blank" title="Maps did not show it"></span></td>
+                    <td class="num"><span class="blank" title="Maps did not show it"><span class="sr-only">not shown</span></span></td>
                     <td><span class="chip chip-unknown">unknown</span></td>
                   </tr>
                   <tr class="lrow landed" data-row="4">
@@ -260,15 +265,16 @@
                   <tr class="lrow landed" data-row="7">
                     <td>Verma Hardware</td>
                     <td>Hardware shop</td>
-                    <td class="num"><span class="blank" title="Maps did not show it"></span></td>
-                    <td class="num"><span class="blank" title="Maps did not show it"></span></td>
+                    <td class="num"><span class="blank" title="Maps did not show it"><span class="sr-only">not shown</span></span></td>
+                    <td class="num"><span class="blank" title="Maps did not show it"><span class="sr-only">not shown</span></span></td>
                     <td><span class="chip chip-unknown">unknown</span></td>
                   </tr>
                 </tbody>
               </table>
-              <p class="ledger-counter mono" role="status" aria-live="polite" id="ledgerCounter">
+              <p class="ledger-counter mono" id="ledgerCounter" aria-hidden="true">
                 8 rows · 3 unknown kept · 0 guessed
               </p>
+              <p class="sr-only" role="status" id="ledgerCounterLive"></p>
             </div>
           </div>
           <p class="stage-footnote mono wrap">† Like the extension, this page acts only on your gesture.</p>
@@ -372,10 +378,10 @@
         </div>
 
         <p class="body-copy">
-          Restaurant cards carry no website chip at all, so absence proves nothing — a naive
-          extractor reports every restaurant in a city as a no-website lead. This one says it does
-          not know and asks you to open the place. Every row records which one you have. Sort by it
-          before you pitch.
+          Restaurant cards carry no chip row at all, so absence proves nothing — a naive extractor
+          reports every restaurant in a city as a no-website lead. This one says it does not know
+          and asks you to open the place. Every row records which one you have. Sort by it before
+          you pitch.
         </p>
       </section>
 
@@ -441,10 +447,10 @@
             <div class="crow-body">
               <p class="crow-name">Verma Hardware <span class="chip chip-unknown">unknown</span></p>
               <dl class="crow-fields mono">
-                <div><dt>phone</dt><dd><span class="blank"></span></dd></div>
-                <div><dt>full_address</dt><dd><span class="blank"></span></dd></div>
-                <div><dt>plus_code</dt><dd><span class="blank"></span></dd></div>
-                <div><dt>website_url</dt><dd><span class="blank"></span></dd></div>
+                <div><dt>phone</dt><dd><span class="blank"><span class="sr-only">not shown</span></span></dd></div>
+                <div><dt>full_address</dt><dd><span class="blank"><span class="sr-only">not shown</span></span></dd></div>
+                <div><dt>plus_code</dt><dd><span class="blank"><span class="sr-only">not shown</span></span></dd></div>
+                <div><dt>website_url</dt><dd><span class="blank"><span class="sr-only">not shown</span></span></dd></div>
               </dl>
             </div>
             <p class="crow-hint mono"><span class="gesture-badge">5s</span> one fresh click<sup><a class="fnref" href="#fn-5s" id="fnref-5s">‡</a></sup></p>
@@ -458,7 +464,7 @@
                 <div><dt>phone</dt><dd>072089 35965</dd></div>
                 <div><dt>full_address</dt><dd>18, Karol Bagh, New Delhi, Delhi 110005</dd></div>
                 <div><dt>plus_code</dt><dd>7JWVJ6J8+JM</dd></div>
-                <div><dt>website_url</dt><dd><span class="blank"></span> <span class="crow-note">website_source: detail</span></dd></div>
+                <div><dt>website_url</dt><dd><span class="blank"><span class="sr-only">not shown</span></span> <span class="crow-note">website_source: detail</span></dd></div>
               </dl>
             </div>
             <p class="crow-stamp mono">enriched_at 14:32:07</p>
@@ -513,12 +519,12 @@
                 <p class="crow-name">Kwik Dry Cleaners <span class="chip chip-none-card">none</span></p>
                 <p class="crow-meta mono">Dry cleaner · 4.1 · 37 reviews</p>
               </div>
-              <p class="crow-stamp mono">exported 12 Jul 2026</p>
+              <p class="crow-stamp mono">exported_at 2026-07-12</p>
             </div>
             <p class="ghosted-caption">
-              Previously exported rows carry a badge with the date and are hidden by default —
-              because re-pitching a business you exported three weeks ago is the embarrassment this
-              exists to prevent.
+              Previously exported rows come back badged, dated, and hidden by default — because
+              re-pitching a business you exported three weeks ago is the embarrassment this exists
+              to prevent.
             </p>
           </div>
         </div>
@@ -557,9 +563,10 @@
           <div class="promise reveal">
             <dt>Nothing leaves your computer<span class="stop">.</span></dt>
             <dd class="mono">
-              No fetch to any endpoint anywhere in the codebase. Session, presets, column choices and
-              the exported-places memory live in chrome.storage.local; the CSV goes to Downloads;
-              diagnostics go to your clipboard only. No server, no account, no payment code.
+              The codebase's one fetch reads its own bundled selector file — nothing addresses the
+              network. Session, presets, column choices and the exported-places memory live in
+              chrome.storage.local; the CSV goes to Downloads; diagnostics go to your clipboard
+              only. No server, no account, no payment code.
             </dd>
           </div>
           <div class="promise reveal">
@@ -574,8 +581,8 @@
             <dt>It stops rather than export rubbish<span class="stop">.</span></dt>
             <dd class="mono">
               A parse-health circuit breaker: fewer than half of visible cards parsing across two
-              consecutive scans halts collection and reports that the layout moved, with the live
-              percentage shown in the panel.
+              consecutive scans, with at least eight cards seen, halts collection and reports that
+              the layout moved — the live percentage stays visible in the panel.
             </dd>
           </div>
           <div class="promise reveal">
@@ -655,13 +662,13 @@
         <div class="scroll-x" tabindex="0" role="group" aria-label="A sample of the file, annotated">
           <div class="fileplate mono">
             <p class="fileline">
-              <button class="fmark" type="button" data-pop="pop-f1" aria-label="About the byte-order mark, note 1">1</button>name,category,rating,reviews,phone,website_status,website_url,website_source,address_line,…<span class="crlf" aria-hidden="true">␍␊</span>
+              <button class="fmark" type="button" data-pop="pop-f1" aria-describedby="pop-f1" aria-label="Note 1, byte-order mark">1</button>name,category,rating,reviews,phone,website_status,website_url,website_source,address_line,…<span class="crlf" aria-hidden="true">␍␊</span>
             </p>
             <p class="fileline">
-              "Harbour Dental Care",Dentist,4.7,156,<button class="fmark" type="button" data-pop="pop-f2" aria-label="About the leading apostrophe, note 2">2</button>'+44&nbsp;20&nbsp;7946&nbsp;0955,has,https://harbourdental.example,card,<button class="fmark" type="button" data-pop="pop-f3" aria-label="About quoted commas, note 3">3</button>"Unit&nbsp;2, Quay&nbsp;House, Harbour&nbsp;Rd",…<span class="crlf" aria-hidden="true">␍␊</span>
+              "Harbour Dental Care",Dentist,4.7,156,<button class="fmark" type="button" data-pop="pop-f2" aria-describedby="pop-f2" aria-label="Note 2, leading apostrophe">2</button>'+44&nbsp;20&nbsp;7946&nbsp;0955,has,https://harbourdental.example,card,<button class="fmark" type="button" data-pop="pop-f3" aria-describedby="pop-f3" aria-label="Note 3, quoted commas">3</button>"Unit&nbsp;2, Quay&nbsp;House, Harbour&nbsp;Rd",…<span class="crlf" aria-hidden="true">␍␊</span>
             </p>
             <p class="fileline">
-              "The Copper Kettle",Restaurant,4.4,<button class="fmark" type="button" data-pop="pop-f4" aria-label="About blank cells, note 4">4</button><span class="blank blank-file"></span>,,unknown,,,"14 Bridge St, Marlow",…<span class="crlf" aria-hidden="true">␍␊</span>
+              "The Copper Kettle",Restaurant,4.4,<button class="fmark" type="button" data-pop="pop-f4" aria-describedby="pop-f4" aria-label="Note 4, blank cells">4</button><span class="blank blank-file"><span class="sr-only">not shown</span></span>,,unknown,,,"14 Bridge St, Marlow",…<span class="crlf" aria-hidden="true">␍␊</span>
             </p>
           </div>
         </div>
@@ -680,9 +687,6 @@
 
       <!-- ============================================================ I · source_query -->
       <section class="section section-locale wrap" data-letter="I">
-        <span class="margin-tick mono" aria-hidden="true">7JWVJ6J8+JM · DELHI</span>
-        <span class="margin-tick margin-tick-2 mono" aria-hidden="true">7JCJWRCM+QV · MUMBAI</span>
-
         <header class="sec-head">
           <span class="cellref mono">source_query</span>
           <h2 class="display">Works in your Maps language<span class="stop">.</span></h2>
@@ -696,16 +700,16 @@
               <p class="mcard-chips"><span class="mcard-chip">Directions</span></p>
             </div>
             <p class="locale-arrow" aria-hidden="true">↓</p>
-            <p class="locale-row mono">"Sharma Sweet Shop",Sweet shop,4.9,85,none,card</p>
+            <p class="locale-row mono">"Sharma Sweet Shop",Sweet shop,4.9,85,,none,,card</p>
           </div>
           <div class="locale-col reveal">
             <div class="mcard mcard-static">
-              <p class="mcard-name devanagari">शर्मा मिठाई भंडार</p>
-              <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.9 <span class="mcard-dim">(85)</span> · <span class="devanagari">मिठाई की दुकान</span></p>
-              <p class="mcard-chips"><span class="mcard-chip devanagari">दिशा-निर्देश</span></p>
+              <p class="mcard-name devanagari" lang="hi">शर्मा मिठाई भंडार</p>
+              <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.9 <span class="mcard-dim">(85)</span> · <span class="devanagari" lang="hi">मिठाई की दुकान</span></p>
+              <p class="mcard-chips"><span class="mcard-chip devanagari" lang="hi">दिशा-निर्देश</span></p>
             </div>
             <p class="locale-arrow" aria-hidden="true">↓</p>
-            <p class="locale-row mono">"<span class="devanagari">शर्मा मिठाई भंडार</span>",<span class="devanagari">मिठाई की दुकान</span>,4.9,85,none,card</p>
+            <p class="locale-row mono">"<span class="devanagari" lang="hi">शर्मा मिठाई भंडार</span>",<span class="devanagari" lang="hi">मिठाई की दुकान</span>,4.9,85,,none,,card</p>
           </div>
         </div>
 
@@ -713,7 +717,7 @@
           Parsing anchors on structure and code values rather than English display text — the same
           card, the same columns, the same file, whatever language your Maps is in. Numbers keep
           their order across locales, which is what makes
-          <span class="devanagari">4.9 स्टार 85 समीक्षाएं</span> parse exactly like 4.9 stars, 85
+          <span class="devanagari" lang="hi">4.9 स्टार 85 समीक्षाएं</span> parse exactly like 4.9 stars, 85
           reviews.
         </p>
       </section>
@@ -760,25 +764,28 @@
         </header>
 
         <table class="limits mono">
+          <caption class="sr-only">
+            Every limit in the product, and what happens at it.
+          </caption>
           <tbody>
             <tr class="reveal">
-              <td class="limits-num">2,000</td>
+              <th scope="row" class="limits-num">2,000</th>
               <td>rows per collection session. Export what you have, then clear the session to keep going.</td>
             </tr>
             <tr class="reveal">
-              <td class="limits-num">50,000</td>
+              <th scope="row" class="limits-num">50,000</th>
               <td>place ids in the exported-places memory, oldest evicted first.</td>
             </tr>
             <tr class="reveal">
-              <td class="limits-num">24</td>
+              <th scope="row" class="limits-num">24</th>
               <td>saved presets, names up to 60 characters.</td>
             </tr>
             <tr class="reveal">
-              <td class="limits-num">1</td>
+              <th scope="row" class="limits-num">1</th>
               <td>place opened per press. There is no other number.</td>
             </tr>
             <tr class="reveal">
-              <td class="limits-num">5&nbsp;s</td>
+              <th scope="row" class="limits-num">5&nbsp;s</th>
               <td>before an unspent gesture expires and is refused.</td>
             </tr>
           </tbody>
@@ -787,8 +794,10 @@
         <p class="closing-line">Free during beta<span class="stop">.</span> Nothing you get today will be taken away<span class="stop">.</span></p>
       </section>
 
-      <!-- ============================================================ L · footer -->
-      <footer class="footer wrap" data-letter="L">
+    </main>
+
+    <!-- ============================================================== L · footer -->
+    <footer class="footer wrap" data-letter="L">
         <h2 class="display">One email, when it ships<span class="stop">.</span></h2>
         <form class="waitlist" data-waitlist novalidate>
           <div class="waitlist-row">
@@ -800,11 +809,12 @@
               required
               placeholder="you@studio.example"
               autocomplete="email"
+              aria-describedby="wl-msg-2"
             />
             <button class="btn-ghost" type="submit">Get one email when it ships<span class="stop">.</span></button>
           </div>
           <p class="waitlist-note mono">No account. No list beyond that one email.</p>
-          <p class="waitlist-msg mono" role="status" aria-live="polite" hidden></p>
+          <p class="waitlist-msg mono" role="status" id="wl-msg-2"></p>
         </form>
 
         <p class="filename mono">maps-leads-plumbers-delhi-<span id="csvDate">2026-08-02</span>.csv</p>
@@ -842,7 +852,6 @@
 
         <p class="eof mono">— end of file · 214 rows</p>
       </footer>
-    </main>
 
     <script src="site.js"></script>
   </body>

@@ -20,6 +20,26 @@
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
+  var PAPER = { light: '#faf9f6', dark: '#121118' };
+
+  function reflectTheme() {
+    var theme = currentTheme();
+    var next = theme === 'dark' ? 'light' : 'dark';
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-theme-toggle]'), function (btn) {
+      btn.setAttribute('aria-label', 'Switch to ' + next);
+    });
+    // Keep mobile browser chrome in step with a manual choice.
+    if (doc.documentElement.hasAttribute('data-theme')) {
+      var meta = doc.querySelector('meta[name="theme-color"]:not([media])');
+      if (!meta) {
+        meta = doc.createElement('meta');
+        meta.name = 'theme-color';
+        doc.head.appendChild(meta);
+      }
+      meta.content = PAPER[theme];
+    }
+  }
+
   Array.prototype.forEach.call(doc.querySelectorAll('[data-theme-toggle]'), function (btn) {
     btn.addEventListener('click', function () {
       var next = currentTheme() === 'dark' ? 'light' : 'dark';
@@ -27,8 +47,11 @@
       try {
         localStorage.setItem('mle-theme', next);
       } catch (e) {}
+      reflectTheme();
     });
   });
+
+  reflectTheme();
 
   /* ------------------------------------------------- ledger gutter furniture */
 
@@ -59,18 +82,41 @@
       letter.textContent = sec.getAttribute('data-letter');
       frag.appendChild(letter);
     });
+    var locale = doc.querySelector('.section-locale');
+    if (locale) {
+      var localeTop = locale.getBoundingClientRect().top + window.scrollY;
+      [
+        ['7JWVJ6J8+JM · DELHI', 140],
+        ['7JCJWRCM+QV · MUMBAI', 420]
+      ].forEach(function (tick) {
+        var el = doc.createElement('span');
+        el.className = 'gtick';
+        el.style.top = localeTop + tick[1] + 'px';
+        el.textContent = tick[0];
+        frag.appendChild(el);
+      });
+    }
     gutter.textContent = '';
     gutter.appendChild(frag);
   }
 
   var gutterTimer = null;
-  window.addEventListener('resize', function () {
+  var scheduleGutter = function () {
     clearTimeout(gutterTimer);
     gutterTimer = setTimeout(buildGutter, 150);
-  });
+  };
+  window.addEventListener('resize', scheduleGutter);
   window.addEventListener('load', buildGutter);
-  if (doc.fonts && doc.fonts.ready && doc.fonts.ready.then) {
-    doc.fonts.ready.then(buildGutter);
+  // In-page state changes (fail-loud toggle, popovers) shift section offsets.
+  if ('ResizeObserver' in window) {
+    var lastHeight = 0;
+    new ResizeObserver(function () {
+      var h = doc.documentElement.scrollHeight;
+      if (Math.abs(h - lastHeight) > 8) {
+        lastHeight = h;
+        scheduleGutter();
+      }
+    }).observe(doc.body);
   }
   buildGutter();
 
@@ -120,8 +166,10 @@
   if (stage && track && counter && !reducedMotion) {
     var rows = Array.prototype.slice.call(stage.querySelectorAll('.lrow'));
     var cards = Array.prototype.slice.call(track.querySelectorAll('.mcard'));
+    var counterLive = doc.getElementById('ledgerCounterLive');
     var landedCount = 0;
     var unknownCount = 0;
+    var settled = false;
 
     var updateCounter = function () {
       counter.textContent =
@@ -130,6 +178,12 @@
         ' · ' +
         unknownCount +
         ' unknown kept · 0 guessed';
+      // One announcement when the ledger is complete — per-row updates
+      // would be eight interruptions in under a second.
+      if (counterLive && landedCount === rows.length) {
+        counterLive.textContent =
+          'All ' + landedCount + ' rows collected · ' + unknownCount + ' unknown kept · 0 guessed';
+      }
     };
 
     var land = function (row) {
@@ -149,6 +203,21 @@
       unknownCount = 0;
       updateCounter();
     };
+
+    // Crossing the layout breakpoint (resize, tablet rotation) mid-story:
+    // settle to the finished table rather than replay or strand the stage.
+    var settleAll = function () {
+      if (settled) return;
+      settled = true;
+      rows.forEach(land);
+      track.style.transform = '';
+      stage.classList.remove('armed');
+    };
+
+    var stageMQ = window.matchMedia('(min-width: 860px)');
+    if (stageMQ.addEventListener) {
+      stageMQ.addEventListener('change', settleAll);
+    }
 
     if (wideStage) {
       arm();
@@ -173,6 +242,7 @@
       var ticking = false;
       var apply = function () {
         ticking = false;
+        if (settled) return;
         if (!geom) measure();
         var vh = window.innerHeight;
         var rect = stage.getBoundingClientRect();
@@ -208,6 +278,12 @@
         geom = null;
         onScroll();
       });
+      if (doc.fonts && doc.fonts.ready && doc.fonts.ready.then) {
+        doc.fonts.ready.then(function () {
+          geom = null;
+          onScroll();
+        });
+      }
       apply();
     } else if ('IntersectionObserver' in window) {
       arm();
@@ -390,7 +466,7 @@
       bom.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
     doc.addEventListener('click', function (ev) {
-      if (!bomPop.hidden && ev.target !== bom) {
+      if (!bomPop.hidden && ev.target !== bom && !bomPop.contains(ev.target)) {
         bomPop.hidden = true;
         bom.setAttribute('aria-expanded', 'false');
       }
@@ -444,21 +520,25 @@
     var msg = form.querySelector('.waitlist-msg');
     var input = form.querySelector('input[type="email"]');
 
+    // The region is always rendered (never display:none), so setting its
+    // text is enough for it to be announced.
     var say = function (text) {
-      if (!msg) return;
-      msg.textContent = text;
-      msg.hidden = false;
+      if (msg) msg.textContent = text;
     };
 
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       if (!input || !input.checkValidity()) {
         say('That does not look like an email address.');
-        if (input) input.focus();
+        if (input) {
+          input.setAttribute('aria-invalid', 'true');
+          input.focus();
+        }
         return;
       }
+      input.removeAttribute('aria-invalid');
       if (!WAITLIST_ENDPOINT) {
-        say('Not taking names yet — sign-ups open when this page does.');
+        say('Not taking names quite yet. Check back soon.');
         return;
       }
       fetch(WAITLIST_ENDPOINT, {

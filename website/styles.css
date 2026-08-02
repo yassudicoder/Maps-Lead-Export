@@ -3,8 +3,9 @@
  *
  * The Honest Ledger: the page is typeset as the artefact the product sells —
  * one continuous, carefully set CSV on warm ledger paper. Serif asserts, mono
- * proves. Amber is reserved for one meaning only: a proven no-website lead.
- * Nothing on this page loops, because no loop exists in the product.
+ * proves. Amber belongs to the no-website signal and the halt threshold that
+ * protects it; nothing decorative borrows it. Nothing on this page loops,
+ * because no loop exists in the product.
  */
 
 /* ------------------------------------------------------------------- fonts
@@ -277,6 +278,19 @@ a {
     border-radius: 5px;
     padding: 2px 7px;
   }
+
+  /* Plus-code ticks: the India claim, set into the page furniture. */
+  .gtick {
+    position: absolute;
+    right: 22px;
+    writing-mode: vertical-rl;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    opacity: 0.45;
+    white-space: nowrap;
+  }
 }
 
 /* ---------------------------------------------------------------- masthead */
@@ -368,6 +382,12 @@ a {
   margin-bottom: clamp(20px, 4vh, 36px);
 }
 
+.tagline-row {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(10px, 1.6vw, 22px);
+}
+
 .tagline {
   font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
   font-optical-sizing: auto;
@@ -381,26 +401,26 @@ a {
 /* The byte-order mark, standing where it stands in the file: first. */
 .bom {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 0.22em;
+  font-size: clamp(11px, 1.4vw, 19px);
   font-weight: 400;
   letter-spacing: 0.06em;
   color: var(--ink);
-  opacity: 0.15;
+  opacity: 0.45;
   background: none;
-  border: 1px solid transparent;
+  border: 1px solid var(--hairline);
   border-radius: 6px;
-  padding: 0.2em 0.4em;
-  margin-right: 0.5em;
-  vertical-align: 0.55em;
+  padding: 0.3em 0.5em;
+  margin-top: clamp(8px, 1.8vw, 26px);
   cursor: help;
-  transition: opacity 150ms ease-out;
+  flex: none;
+  transition: opacity 150ms ease-out, border-color 150ms ease-out;
 }
 
 .bom:hover,
 .bom:focus-visible,
 .bom[aria-expanded='true'] {
-  opacity: 0.6;
-  border-color: var(--hairline);
+  opacity: 0.85;
+  border-color: var(--ink-muted);
 }
 
 .pop {
@@ -456,7 +476,7 @@ a {
 
 .waitlist input::placeholder {
   color: var(--ink-muted);
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .btn-ghost {
@@ -482,12 +502,20 @@ a {
   margin-top: 10px;
 }
 
+/* Always rendered so the status region exists before its first message —
+   a live region born inside display:none is announced unreliably. */
 .waitlist-msg {
   font-size: 12.5px;
   color: var(--ink);
   border-left: 2px solid var(--accent);
   padding-left: 10px;
   margin-top: 12px;
+}
+
+.waitlist-msg:empty {
+  border: 0;
+  margin: 0;
+  padding: 0;
 }
 
 /* ------------------------------------------------------------------- stage
@@ -596,7 +624,7 @@ a {
 }
 
 .mcard-dim {
-  opacity: 0.75;
+  opacity: 1;
 }
 
 .mcard-line {
@@ -1506,7 +1534,15 @@ kbd {
   margin: 0 3px;
   vertical-align: 2px;
   cursor: pointer;
+  position: relative;
   transition: background-color 150ms ease-out;
+}
+
+/* A 17px ring is a legible marker but a poor target: widen the hit area. */
+.fmark::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .fmark:hover {
@@ -1553,32 +1589,15 @@ kbd {
   position: relative;
 }
 
-.margin-tick {
-  display: none;
-}
-
-@media (min-width: 1024px) {
-  .margin-tick {
-    display: block;
-    position: absolute;
-    left: calc((100% - 100vw + 64px) / 2 + 74px);
-    top: 140px;
-    writing-mode: vertical-rl;
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    color: var(--ink-muted);
-    opacity: 0.4;
-    pointer-events: none;
-  }
-
-  .margin-tick-2 {
-    top: 420px;
-  }
-}
-
 .locale-pair {
   display: grid;
   gap: clamp(24px, 4vw, 48px);
+}
+
+/* Grid items refuse to shrink below a nowrap row's intrinsic width unless
+   told otherwise — without this the phone page scrolls sideways. */
+.locale-pair > * {
+  min-width: 0;
 }
 
 @media (min-width: 780px) {
@@ -1804,6 +1823,32 @@ kbd {
   opacity: 0.7;
   margin-top: clamp(48px, 8vh, 80px);
   letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------ print */
+
+@media print {
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .js .stage.armed .lrow:not(.landed) {
+    clip-path: none;
+  }
+
+  .js .flow-line {
+    clip-path: none;
+  }
+
+  .js .filters-demo .ftoken {
+    opacity: 1;
+  }
+
+  .gutter,
+  .theme-toggle {
+    display: none;
+  }
 }
 
 /* --------------------------------------------------------- reduced motion */

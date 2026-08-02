@@ -2,6 +2,8 @@
  * Copy lint for the landing site. Red line 6 binds website copy: the words
  * scrape / scraper / bot / automation never appear user-facing, and the
  * voice rules ban we/our/us, exclamation marks and a few false promises.
+ * Comments and code ship to visitors too, so they are held to the
+ * vocabulary rule as well — across index.html, site.js and styles.css.
  *
  * Plain node, no dependencies, exits non-zero on failure — same convention
  * as the extension's own test scripts.
@@ -13,11 +15,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
+const HTML = read('index.html');
+const SITE_JS = read('site.js');
+const STYLES = read('styles.css');
+const SELF = read('lint-copy.js');
 
 /* User-facing text: element text content plus the attributes a reader or a
-   screen reader meets. Scripts and styles are not user-facing; code comments
-   are checked separately below with a narrower rule set. */
+   screen reader meets. Comments and script/style bodies are excluded here
+   and checked separately below. */
 function visibleText(html) {
   let out = html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -30,6 +36,14 @@ function visibleText(html) {
   return out + ' ' + attrs.join(' ');
 }
 
+/* The non-visible corpus: HTML comments, inline script bodies, and the two
+   shipped code files whole (their string literals are user-facing anyway). */
+function codeCorpus() {
+  const comments = (HTML.match(/<!--[\s\S]*?-->/g) || []).join('\n');
+  const scripts = (HTML.match(/<script[\s\S]*?<\/script>/gi) || []).join('\n');
+  return [comments, scripts, SITE_JS, STYLES].join('\n');
+}
+
 const text = visibleText(HTML);
 const failures = [];
 
@@ -37,15 +51,13 @@ const failures = [];
 const FORBIDDEN = [
   /\bscrap(?:e[sd]?|er[s]?|ing)\b/i,
   /\bbots?\b/i,
-  /\bautomations?\b/i,
-  /\bautomated?\b/i,
-  /\bautomates?\b/i,
+  /\bautomat(?:ions?|ed?|es)\b/i, // the product's own "lands here automatically" stays sanctioned
+  /\bcrawl(?:s|ed|ing|ers?)?\b/i,
+  /\bharvest(?:s|ed|ing)?\b/i,
   /\bfree\s+forever\b/i,
   /\bavailable\s+now\b/i,
   /\bunlimited\b/i,
   /\blifetime\b/i,
-  /\bcrawl(?:s|ed|ing|er)?\b/i,
-  /\bharvest(?:s|ed|ing)?\b/i,
   /\bemails\b/i, // plural reads as harvesting; the waitlist's "one email" is fine
   /\bemail\s+(?:finder|finding|extract\w*|list[s]?\b|harvest\w*)/i,
   /\bfinds?\s+emails?\b/i,
@@ -72,13 +84,28 @@ for (const phrase of REQUIRED) {
   if (!text.includes(phrase)) failures.push(`missing required phrase: "${phrase}"`);
 }
 
-/* Comments and scripts still must not carry red-line vocabulary. */
-const code = HTML.replace(visibleText(HTML), '');
-const CODE_FORBIDDEN = [/\bscraper?\b/i, /\bautomations?\b/i];
+/* Red-line vocabulary is banned from comments and code too. */
+const CODE_FORBIDDEN = [
+  /\bscrap(?:e[sd]?|er[s]?|ing)\b/i,
+  /\bbots?\b/i,
+  /\bautomat(?:ions?|ed?|es)\b/i,
+  /\bcrawl(?:s|ed|ing|ers?)?\b/i,
+  /\bharvest(?:s|ed|ing)?\b/i
+];
 for (const re of CODE_FORBIDDEN) {
-  const hit = code.match(re);
-  if (hit) failures.push(`forbidden vocabulary in markup/comments: "${hit[0]}"`);
+  const hit = codeCorpus().match(re);
+  if (hit) failures.push(`forbidden vocabulary in markup/comments/code: "${hit[0]}" (${re})`);
 }
+
+/* The linter must be able to see its own teeth: a canary that each rule set
+   actually fires. */
+if (!/\bscraper\b/i.test('a scraper') || !FORBIDDEN[0].test('scraper')) {
+  failures.push('self-test: FORBIDDEN[0] no longer matches "scraper"');
+}
+if (!CODE_FORBIDDEN[1].test('a bot check')) {
+  failures.push('self-test: CODE_FORBIDDEN bot rule no longer matches "a bot check"');
+}
+void SELF;
 
 if (failures.length) {
   console.error('lint-copy: FAIL');
