@@ -17,13 +17,21 @@
   const K = MLE.K;
 
   /**
-   * While true, every Pro flag reads as granted. Decided 2026-08-02: the
-   * product launches free and premium is revisited around 2027-02.
+   * While true, every Pro flag reads as granted. Ruled 2026-08-02: the product
+   * launches free and premium is revisited at the end of M4.
    *
-   * Flipped by a human, in a release, with a version bump — never compared
-   * against a date at runtime. A timer here would mean the extension quietly
-   * starts refusing to do what it did yesterday, on a machine nobody touched,
-   * for a user who never agreed to it.
+   * Turned over by a human, in a versioned release, with a version bump — never
+   * compared against a date at runtime. A timer here would mean the extension
+   * quietly starts refusing to do what it did yesterday, on a machine nobody
+   * touched, for a user who never agreed to it. That is settled, not a
+   * preference to revisit when a deadline is inconvenient.
+   *
+   * The preferred model is additive: charge for capability that never existed
+   * free rather than clawing back rows or exports. If that covers the business,
+   * the caps below may never bind at all — they stay built, tested and inert.
+   *
+   * Installs predating any flip keep their tier, identified by
+   * K.STORAGE.INSTALLED_AT. See docs/MONETIZATION.md.
    */
   const BETA_ALL_FREE = true;
 

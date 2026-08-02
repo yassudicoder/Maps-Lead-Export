@@ -1,6 +1,15 @@
 # Monetization decisions
 
-Recorded 2026-08-02, Yash's call.
+Ruled 2026-08-02 by Yash. Settled unless he reopens them.
+
+| | |
+| --- | --- |
+| Free tier | Everything, now. Premium revisited ~2027-02 |
+| Flip mechanism | Human, versioned release, version bump. **No runtime date check, ever** |
+| Grandfathering | Approved. Pre-flip installs keep their tier, identified by install timestamp |
+| Premium model | **Additive**, not restrictive. New capability, never clawed-back rows |
+| Part B (API enrich) | Parked |
+| Revisit | End of M4, with usage data |
 
 ## 1. Everything is free until roughly 2027-02
 
@@ -14,40 +23,52 @@ anywhere in the UI.
 The cap machinery (25 rows/export, 2 exports/day) is built and tested but inert.
 It stays that way.
 
-### There is deliberately no date-triggered flip
+### Flip mechanism — ruled, 2026-08-02
 
-The constant is flipped by a human, in a release, with a version bump and a
-store-listing update. It is not compared against a date at runtime.
+The constant is turned over by Yash, in a versioned release, with a version
+bump and a store-listing update. **No date-triggered runtime flip, ever.**
 
-A timer would mean the extension quietly starts refusing to do what it did
-yesterday, on a machine nobody touched, for a user who never agreed to it. That
-is a support incident with a fuse on it, and it would land while nobody is
-looking at the calendar.
+An extension that silently starts refusing yesterday's behaviour on an untouched
+machine is a fused support incident. This is settled, not a preference to be
+revisited when a deadline is inconvenient.
 
-### The harder problem, for when the date arrives
+### Grandfathering — approved, 2026-08-02
 
-The free tier as originally specified keeps "live collection, all filters, CSV
-export within caps" — and those caps are 25 rows per export, twice a day. For a
-lead-list tool that is a very small allowance.
+Installs that predate the flip are identified by the write-once install
+timestamp and keep free-tier behaviour **as it stood at their install**.
 
-Six months of users will have been exporting 240 rows at a time. Imposing 25 on
-them later is not a downgrade they will read as fair, and the review page is
-where they will say so.
+The timestamp records. It enforces nothing, and nothing reads it, until a future
+release explicitly does. It ships now only because it cannot be created
+retroactively: by the time you want to know who predates the caps, it is far too
+late to start recording it.
 
-Two ways out, worth deciding before the date rather than after:
+`mle.installedAt.v1` — written once on first install, never overwritten, ignored
+on update.
 
-- **Grandfather.** Anyone installed before the switch keeps what they have.
-  Cheap to implement: stamp an install date now, so it exists when it is needed.
-- **Make premium additive, not restrictive.** Charge for things that did not
-  exist in the free version rather than removing things that did. API enrichment
-  (Part B) is the obvious candidate — it is genuinely new capability and it
-  costs the user real money at Google either way.
+> **Flag for whoever designs the flip.** "As it stood at their install" is a
+> claim about the tier, and the timestamp only records the date. That is
+> sufficient *provided the tier definition is versioned in the changelog*, so a
+> date can be resolved to a tier without archaeology. If a second flip ever
+> happens, resolve installs against a recorded tier version rather than a date
+> range. Not built, deliberately — the ruling names the timestamp as the
+> identifier and one flip needs nothing more.
 
-Nothing else is being built for this now, with one exception. The install
-timestamp (`mle.installedAt.v1`, written once on first install and never
-overwritten) ships from the first release, because it cannot be created
-retroactively — by the time you want to know who predates the caps, it is too
-late to start recording it. Nothing reads it yet.
+### Preferred model: additive, not restrictive — ruled, 2026-08-02
+
+Charge for capability that never existed free. Do not claw back rows or exports.
+
+Named candidates, neither specified nor built:
+
+- **API enrich** (Part B) — genuinely new capability, and it costs the user real
+  money at Google either way, so it prices itself honestly.
+- **Audit-lite score** — named by Yash; scope not yet defined, and not invented
+  here.
+
+The consequence worth stating plainly: **if additive covers the business, the
+25×2 cap may never bind at all.** The cap machinery stays built, tested and
+inert, and may simply never be switched on.
+
+Revisit at the end of M4, with usage data rather than guesses.
 
 ## 2. Part B (BYO-key Places API) is parked
 
