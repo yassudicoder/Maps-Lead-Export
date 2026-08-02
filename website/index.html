@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maps Lead Export — Export what you see.</title>
+    <meta
+      name="description"
+      content="A Chrome side panel that turns the Google Maps results you are already looking at into a clean CSV lead list. Collects only what you see. Never runs in the background. Nothing leaves your computer."
+    />
+    <meta property="og:title" content="Maps Lead Export — Export what you see." />
+    <meta
+      property="og:description"
+      content="A Chrome side panel that turns the Google Maps results you are already looking at into a clean CSV lead list. Local-first, honest about unknowns, free during beta."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="og.png" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF9F6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121118" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+    <!-- Theme before first paint, so a stored choice never flashes. -->
+    <script>
+      (function () {
+        document.documentElement.classList.add("js");
+        try {
+          var t = localStorage.getItem("mle-theme");
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+
+    <link
+      rel="preload"
+      href="fonts/fraunces-var.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- Row numbers and section letters, filled by site.js on wide screens. -->
+    <div class="gutter" id="gutter" aria-hidden="true"></div>
+
+    <header class="masthead wrap">
+      <p class="masthead-brand">
+        <svg class="pin" viewBox="0 0 128 128" width="22" height="22" aria-hidden="true">
+          <defs>
+            <linearGradient id="ping" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6A63F6" />
+              <stop offset="1" stop-color="#4338CA" />
+            </linearGradient>
+          </defs>
+          <rect width="128" height="128" rx="30" fill="url(#ping)" />
+          <path
+            fill="#fff"
+            fill-rule="evenodd"
+            d="M64 22c-17.7 0-32 13.6-32 30.4 0 13.1 8.6 24.8 17.9 34.9L64 103l14.1-15.7C87.4 77.2 96 65.5 96 52.4 96 35.6 81.7 22 64 22Zm0 42a12 12 0 1 1 0-24 12 12 0 0 1 0 24Z"
+          />
+        </svg>
+        <span class="masthead-name mono">maps_lead_export</span>
+      </p>
+      <p class="masthead-side">
+        <span class="mono muted">by TheOpenBox</span>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark">
+          <svg class="icon-sun" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.3" />
+            <path
+              d="M8 1.2v1.8M8 13v1.8M1.2 8H3M13 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+            />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <path
+              d="M13.2 9.8A5.6 5.6 0 0 1 6.2 2.8a5.6 5.6 0 1 0 7 7Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </p>
+    </header>
+
+    <main id="main">
+      <!-- ============================================================ A · hero -->
+      <section class="hero wrap" data-letter="A">
+        <p class="kicker mono">Coming to the Chrome Web Store · free during beta</p>
+
+        <h1 class="tagline">
+          <button
+            class="bom"
+            type="button"
+            data-pop="pop-bom"
+            aria-expanded="false"
+            aria-label="UTF-8 byte-order mark"
+          >FEFF</button
+          ><span class="tagline-text">Export what you see<span class="stop">.</span></span>
+        </h1>
+        <span class="pop mono" role="note" id="pop-bom" hidden
+          >U+FEFF, the UTF-8 byte-order mark. Every exported file starts with it, so Excel opens it
+          clean.</span
+        >
+
+        <p class="hero-sub">
+          Collects only what you see<span class="stop">.</span> Never runs in the
+          background<span class="stop">.</span> Nothing leaves your computer<span class="stop">.</span>
+        </p>
+
+        <p class="hero-body">
+          A Chrome side panel for local-SEO freelancers and agencies. Browse Google Maps the way you
+          already do; the businesses you see become a clean CSV lead list, honest about what it knows
+          and what it does not.
+        </p>
+
+        <form class="waitlist" data-waitlist novalidate>
+          <div class="waitlist-row">
+            <label class="sr-only" for="wl-email">Email address</label>
+            <input
+              id="wl-email"
+              name="email"
+              type="email"
+              required
+              placeholder="you@studio.example"
+              autocomplete="email"
+            />
+            <button class="btn-ghost" type="submit">Get one email when it ships<span class="stop">.</span></button>
+          </div>
+          <p class="waitlist-note mono">No account. No list beyond that one email.</p>
+          <p class="waitlist-msg mono" role="status" aria-live="polite" hidden></p>
+        </form>
+      </section>
+
+      <!-- The signature stage: your own scrolling collects the rows. -->
+      <section class="stage" id="stage" aria-label="How collecting looks">
+        <div class="stage-pin">
+          <div class="stage-grid wrap">
+            <div class="stage-cards" aria-hidden="true">
+              <div class="scanline"><span class="mono">visible</span></div>
+              <div class="cards-track" id="cardsTrack">
+                <div class="mcard" data-row="0">
+                  <p class="mcard-name">Apex Plumbing Services</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.6 <span class="mcard-dim">(89)</span> · Plumber</p>
+                  <p class="mcard-line">Open · Closes 6&nbsp;pm</p>
+                  <p class="mcard-chips"><span class="mcard-chip">Directions</span><span class="mcard-chip mcard-chip-site">Website</span></p>
+                </div>
+                <div class="mcard" data-row="1">
+                  <p class="mcard-name devanagari">शर्मा मिठाई भंडार</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.9 <span class="mcard-dim">(85)</span> · Sweet shop</p>
+                  <p class="mcard-line">Open · Closes 9&nbsp;pm</p>
+                  <p class="mcard-chips"><span class="mcard-chip">Directions</span></p>
+                </div>
+                <div class="mcard" data-row="2">
+                  <p class="mcard-name">Marlow &amp; Finch Bakery</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.8 <span class="mcard-dim">(214)</span> · Bakery</p>
+                  <p class="mcard-line">Open · Closes 5&nbsp;pm</p>
+                  <p class="mcard-chips"><span class="mcard-chip">Directions</span><span class="mcard-chip mcard-chip-site">Website</span></p>
+                </div>
+                <div class="mcard mcard-bare" data-row="3">
+                  <p class="mcard-name">The Copper Kettle</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★☆</span> 4.4 · Restaurant</p>
+                  <p class="mcard-line">Open · Closes 11&nbsp;pm</p>
+                </div>
+                <div class="mcard mcard-bare" data-row="4">
+                  <p class="mcard-name">Delhi Darbar</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★☆</span> 4.2 <span class="mcard-dim">(1,043)</span> · Restaurant</p>
+                  <p class="mcard-line">Open · Closes 11:30&nbsp;pm</p>
+                </div>
+                <div class="mcard" data-row="5">
+                  <p class="mcard-name">Kwik Dry Cleaners</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★☆</span> 4.1 <span class="mcard-dim">(37)</span> · Dry cleaner</p>
+                  <p class="mcard-line">Open · Closes 8&nbsp;pm</p>
+                  <p class="mcard-chips"><span class="mcard-chip">Directions</span></p>
+                </div>
+                <div class="mcard" data-row="6">
+                  <p class="mcard-name">Harbour Dental Care</p>
+                  <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.7 <span class="mcard-dim">(156)</span> · Dentist</p>
+                  <p class="mcard-line">Open · Closes 5:30&nbsp;pm</p>
+                  <p class="mcard-chips"><span class="mcard-chip">Directions</span><span class="mcard-chip mcard-chip-site">Website</span></p>
+                </div>
+                <div class="mcard mcard-bare" data-row="7">
+                  <p class="mcard-name">Verma Hardware</p>
+                  <p class="mcard-meta">Hardware shop</p>
+                  <p class="mcard-line">Open · Closes 7&nbsp;pm</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-ledger">
+              <table class="ledger">
+                <caption class="sr-only">
+                  The side panel's ledger, filling with the businesses scrolled past on the left.
+                </caption>
+                <thead>
+                  <tr class="mono">
+                    <th scope="col">name</th>
+                    <th scope="col">category</th>
+                    <th scope="col" class="num">rating</th>
+                    <th scope="col" class="num">reviews</th>
+                    <th scope="col">website_status</th>
+                  </tr>
+                </thead>
+                <tbody class="mono">
+                  <tr class="lrow landed" data-row="0">
+                    <td>Apex Plumbing Services</td>
+                    <td>Plumber</td>
+                    <td class="num">4.6</td>
+                    <td class="num">89</td>
+                    <td><span class="chip chip-has">has</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="1">
+                    <td class="devanagari">शर्मा मिठाई भंडार</td>
+                    <td>Sweet shop</td>
+                    <td class="num">4.9</td>
+                    <td class="num">85</td>
+                    <td><span class="chip chip-none-card">none</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="2">
+                    <td>Marlow &amp; Finch Bakery</td>
+                    <td>Bakery</td>
+                    <td class="num">4.8</td>
+                    <td class="num">214</td>
+                    <td><span class="chip chip-has">has</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="3">
+                    <td>The Copper Kettle</td>
+                    <td>Restaurant</td>
+                    <td class="num">4.4</td>
+                    <td class="num"><span class="blank" title="Maps did not show it"></span></td>
+                    <td><span class="chip chip-unknown">unknown</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="4">
+                    <td>Delhi Darbar</td>
+                    <td>Restaurant</td>
+                    <td class="num">4.2</td>
+                    <td class="num">1,043</td>
+                    <td><span class="chip chip-unknown">unknown</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="5">
+                    <td>Kwik Dry Cleaners</td>
+                    <td>Dry cleaner</td>
+                    <td class="num">4.1</td>
+                    <td class="num">37</td>
+                    <td><span class="chip chip-none-card">none</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="6">
+                    <td>Harbour Dental Care</td>
+                    <td>Dentist</td>
+                    <td class="num">4.7</td>
+                    <td class="num">156</td>
+                    <td><span class="chip chip-has">has</span></td>
+                  </tr>
+                  <tr class="lrow landed" data-row="7">
+                    <td>Verma Hardware</td>
+                    <td>Hardware shop</td>
+                    <td class="num"><span class="blank" title="Maps did not show it"></span></td>
+                    <td class="num"><span class="blank" title="Maps did not show it"></span></td>
+                    <td><span class="chip chip-unknown">unknown</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="ledger-counter mono" role="status" aria-live="polite" id="ledgerCounter">
+                8 rows · 3 unknown kept · 0 guessed
+              </p>
+            </div>
+          </div>
+          <p class="stage-footnote mono wrap">† Like the extension, this page acts only on your gesture.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ B · workflow -->
+      <section class="section wrap" data-letter="B">
+        <header class="sec-head">
+          <span class="cellref mono">workflow</span>
+          <h2 class="display">Browse<span class="stop">.</span> Filter<span class="stop">.</span> Confirm<span class="stop">.</span> Export<span class="stop">.</span> Pitch<span class="stop">.</span></h2>
+        </header>
+
+        <div class="flow" data-reveal-group>
+          <svg class="flow-line" id="flowLine" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              d="M20 30 C 150 6, 250 6, 320 24 S 520 38, 620 18 S 850 4, 980 26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-dasharray="6 6"
+            />
+          </svg>
+          <ol class="flow-cells">
+            <li class="flow-cell reveal">
+              <span class="flow-letter mono">A</span>
+              <h3 class="flow-verb">Browse</h3>
+              <p class="mono">Scroll the Maps results list. Every business you see lands here automatically.</p>
+            </li>
+            <li class="flow-cell reveal">
+              <span class="flow-letter mono">B</span>
+              <h3 class="flow-verb">Filter</h3>
+              <p class="mono">No website, under 50 reviews, within 5 km.</p>
+            </li>
+            <li class="flow-cell reveal">
+              <span class="flow-letter mono">C</span>
+              <h3 class="flow-verb">Confirm</h3>
+              <p class="mono">One fresh click opens one place. Nothing advances on its own.</p>
+            </li>
+            <li class="flow-cell reveal">
+              <span class="flow-letter mono">D</span>
+              <h3 class="flow-verb">Export</h3>
+              <p class="mono">A file that opens clean in Excel. Or copy, and paste into Sheets.</p>
+            </li>
+            <li class="flow-cell reveal">
+              <span class="flow-letter mono">E</span>
+              <h3 class="flow-verb">Pitch</h3>
+              <p class="mono">Never the same business twice.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============================================================ C · website_status -->
+      <section class="section wrap" data-letter="C">
+        <header class="sec-head">
+          <span class="cellref mono">website_status</span>
+          <h2 class="display">Never a guess<span class="stop">.</span></h2>
+        </header>
+
+        <blockquote class="pull">
+          A none from a card is an inference; a none from the place&rsquo;s own page is a
+          fact<span class="stop">.</span>
+        </blockquote>
+
+        <div class="verdicts" data-reveal-group>
+          <div class="verdict-card reveal">
+            <div class="mcard mcard-bare mcard-static">
+              <p class="mcard-name">The Copper Kettle</p>
+              <p class="mcard-meta"><span class="mcard-stars">★★★★☆</span> 4.4 · Restaurant</p>
+              <p class="mcard-line">Open · Closes 11&nbsp;pm</p>
+            </div>
+            <p class="verdict-caption mono">A restaurant card. No chip row at all — absence proves nothing.</p>
+          </div>
+          <div class="verdict-pair reveal">
+            <div class="verdict">
+              <span class="verdict-who mono">a naive extractor</span>
+              <span class="chip chip-none-page chip-struck">none</span>
+              <p class="verdict-note">Reads &ldquo;no chip&rdquo; as &ldquo;no website&rdquo; — and reports every
+                restaurant in the city as a no-website lead.</p>
+            </div>
+            <div class="verdict">
+              <span class="verdict-who mono">this panel</span>
+              <span class="chip chip-unknown">unknown</span>
+              <p class="verdict-note">Says it does not know, and asks you to open the place.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="provenance reveal" data-reveal-group>
+          <div class="prov-row">
+            <span class="chip chip-none-card">none</span>
+            <span class="mono prov-src">website_source: card</span>
+            <span class="prov-eq">= an inference</span>
+          </div>
+          <div class="prov-row">
+            <span class="chip chip-none-page">none</span>
+            <span class="mono prov-src">website_source: detail</span>
+            <span class="prov-eq">= a fact</span>
+          </div>
+        </div>
+
+        <p class="body-copy">
+          Restaurant cards carry no website chip at all, so absence proves nothing — a naive
+          extractor reports every restaurant in a city as a no-website lead. This one says it does
+          not know and asks you to open the place. Every row records which one you have. Sort by it
+          before you pitch.
+        </p>
+      </section>
+
+      <!-- ============================================================ D · filters -->
+      <section class="section wrap" data-letter="D">
+        <header class="sec-head">
+          <span class="cellref mono">filters</span>
+          <h2 class="display">Filters built for prospecting<span class="stop">.</span></h2>
+        </header>
+
+        <div class="filters-demo" id="filtersDemo">
+          <div class="filters-left">
+            <div class="ftokens" aria-hidden="true">
+              <span class="ftoken mono" data-step="1">no website</span>
+              <span class="ftoken mono" data-step="2">under 50 reviews</span>
+              <span class="ftoken mono" data-step="3">within 5 km</span>
+            </div>
+            <p class="fcounter">
+              <span class="fcounter-num mono" id="fCounter">41</span>
+              <span class="fcounter-label mono">of 214 collected</span>
+            </p>
+            <p class="sr-only" role="status" aria-live="polite" id="fCounterLive"></p>
+            <p class="fkept mono" id="fKept">12 unknown kept</p>
+            <p class="fkept-caption">
+              Rows whose values Maps never showed are kept by default. When you choose to drop them,
+              the panel says exactly how many went, and why.
+            </p>
+          </div>
+
+          <figure class="radius-plot" id="radiusPlot">
+            <svg viewBox="0 0 320 240" role="img" aria-label="Twenty-four collected places as dots; the ones inside a dashed five-kilometre ring are highlighted">
+              <g class="plot-dots"></g>
+              <g class="plot-ring">
+                <circle class="ring-circle" cx="160" cy="120" r="78" fill="none" stroke-dasharray="5 5" />
+                <text class="ring-label mono" x="160" y="34" text-anchor="middle">5 km</text>
+              </g>
+            </svg>
+            <figcaption class="mono"><span id="ringCount">9</span> inside the ring</figcaption>
+          </figure>
+        </div>
+
+        <div class="preset reveal">
+          <span class="preset-tab mono">no-site · &lt;50 · 5km</span>
+          <p class="preset-caption">
+            Save the recipe as a named preset. Up to 24. Only filter values are stored — no rows, no
+            place data.
+          </p>
+        </div>
+
+        <p class="closing-line">Export writes the filtered list you can see, never the hidden whole<span class="stop">.</span></p>
+      </section>
+
+      <!-- ============================================================ E · enriched_at -->
+      <section class="section wrap" data-letter="E">
+        <header class="sec-head">
+          <span class="cellref mono">enriched_at</span>
+          <h2 class="display">Click a lead to confirm it at the source<span class="stop">.</span></h2>
+        </header>
+
+        <div class="confirm-plate" data-reveal-group>
+          <div class="crow reveal">
+            <p class="crow-tag mono">seen in a list <span class="crow-level">· Level 1</span></p>
+            <div class="crow-body">
+              <p class="crow-name">Verma Hardware <span class="chip chip-unknown">unknown</span></p>
+              <dl class="crow-fields mono">
+                <div><dt>phone</dt><dd><span class="blank"></span></dd></div>
+                <div><dt>full_address</dt><dd><span class="blank"></span></dd></div>
+                <div><dt>plus_code</dt><dd><span class="blank"></span></dd></div>
+                <div><dt>website_url</dt><dd><span class="blank"></span></dd></div>
+              </dl>
+            </div>
+            <p class="crow-hint mono"><span class="gesture-badge">5s</span> one fresh click<sup><a class="fnref" href="#fn-5s" id="fnref-5s">‡</a></sup></p>
+          </div>
+
+          <div class="crow crow-filled reveal">
+            <p class="crow-tag mono">confirmed at source <span class="crow-level">· Level 2</span></p>
+            <div class="crow-body">
+              <p class="crow-name">Verma Hardware <span class="chip chip-none-page">none</span></p>
+              <dl class="crow-fields mono">
+                <div><dt>phone</dt><dd>072089 35965</dd></div>
+                <div><dt>full_address</dt><dd>18, Karol Bagh, New Delhi, Delhi 110005</dd></div>
+                <div><dt>plus_code</dt><dd>7JWVJ6J8+JM</dd></div>
+                <div><dt>website_url</dt><dd><span class="blank"></span> <span class="crow-note">website_source: detail</span></dd></div>
+              </dl>
+            </div>
+            <p class="crow-stamp mono">enriched_at 14:32:07</p>
+          </div>
+        </div>
+
+        <p class="body-copy">
+          Click a row and that one gesture opens the place&rsquo;s own page in Maps. The row fills in
+          with phone, full address and plus code, stamped with the moment it was read — separating
+          seen-in-a-list from confirmed-at-source. A no-website lead proven on the place&rsquo;s own
+          page is the one worth pitching.
+        </p>
+        <p class="body-copy">
+          Nothing opens without a fresh click. <kbd class="mono">Enter</kbd> works as a shortcut when
+          your hands are on the keyboard. <em>Open next unenriched</em> opens exactly one place per
+          press and shows how many remain — press again for the next; nothing advances on its own.
+        </p>
+        <p class="footnote mono" id="fn-5s">‡ Gestures older than 5 seconds are refused. <a class="fnback" href="#fnref-5s" aria-label="Back to text">↩</a></p>
+      </section>
+
+      <!-- ============================================================ F · exported_at -->
+      <section class="section wrap" data-letter="F">
+        <header class="sec-head">
+          <span class="cellref mono">exported_at</span>
+          <h2 class="display">Never pitch the same business twice<span class="stop">.</span></h2>
+        </header>
+
+        <div class="dedupe" data-reveal-group>
+          <div class="memory reveal">
+            <table class="memory-table mono">
+              <caption class="sr-only">The entire exported-places memory: identifiers and dates only.</caption>
+              <thead>
+                <tr><th scope="col">place_id</th><th scope="col">exported_at</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>ChIJd7zN_9nGDDkRnYS…</td><td>2026-07-12</td></tr>
+                <tr><td>ChIJPzR2XKPGDDkRcT9…</td><td>2026-07-12</td></tr>
+                <tr><td>ChIJk2mFhLXGDDkR4Wp…</td><td>2026-07-19</td></tr>
+                <tr><td>ChIJx3vYQ6bGDDkRq0d…</td><td>2026-07-26</td></tr>
+                <tr><td>ChIJN8aWmMnGDDkRLmB…</td><td>2026-08-01</td></tr>
+              </tbody>
+            </table>
+            <p class="memory-caption">
+              That is the entire memory. Place identifiers and dates — nothing about the business —
+              and it never leaves this computer.
+            </p>
+          </div>
+
+          <div class="ghosted reveal">
+            <div class="crow crow-ghost">
+              <div class="crow-body">
+                <p class="crow-name">Kwik Dry Cleaners <span class="chip chip-none-card">none</span></p>
+                <p class="crow-meta mono">Dry cleaner · 4.1 · 37 reviews</p>
+              </div>
+              <p class="crow-stamp mono">exported 12 Jul 2026</p>
+            </div>
+            <p class="ghosted-caption">
+              Previously exported rows carry a badge with the date and are hidden by default —
+              because re-pitching a business you exported three weeks ago is the embarrassment this
+              exists to prevent.
+            </p>
+          </div>
+        </div>
+
+        <p class="specimen-line mono">
+          50,000 place ids · oldest evicted first · inspect · download as CSV · Forget everything.
+        </p>
+      </section>
+
+      <!-- ============================================================ G · enforcement -->
+      <section class="section wrap" data-letter="G">
+        <header class="sec-head">
+          <span class="cellref mono">enforcement</span>
+          <h2 class="display">The promises, and how the code keeps them<span class="stop">.</span></h2>
+        </header>
+
+        <div class="double-rule" aria-hidden="true"></div>
+        <dl class="promises">
+          <div class="promise reveal">
+            <dt>Collects only what you see, in your own tab<span class="stop">.</span></dt>
+            <dd class="mono">
+              Zero host permissions and no content scripts in the manifest. The only injection path
+              is your toolbar click, which grants activeTab for that one tab. A full page reload
+              drops the grant and the panel asks for another click.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>Never moves the page or opens places on its own<span class="stop">.</span></dt>
+            <dd class="mono">
+              The collector only observes. The single synthetic action is relaying one fresh gesture
+              of yours to a card&rsquo;s existing link: gestures older than 5 seconds are refused,
+              one navigation may be in flight at a time, and only cards Maps has already drawn are
+              eligible. No queue, loop, timer or batch path exists in the code.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>Nothing leaves your computer<span class="stop">.</span></dt>
+            <dd class="mono">
+              No fetch to any endpoint anywhere in the codebase. Session, presets, column choices and
+              the exported-places memory live in chrome.storage.local; the CSV goes to Downloads;
+              diagnostics go to your clipboard only. No server, no account, no payment code.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>A field Maps did not show is null, never a guess<span class="stop">.</span></dt>
+            <dd class="mono">
+              Tri-state website status with a website_source column separating card inference from
+              detail-page fact. Reviews export blank rather than zero; unknown distance exports blank
+              rather than 0; addresses are reported exactly as Google serves them, errors included.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>It stops rather than export rubbish<span class="stop">.</span></dt>
+            <dd class="mono">
+              A parse-health circuit breaker: fewer than half of visible cards parsing across two
+              consecutive scans halts collection and reports that the layout moved, with the live
+              percentage shown in the panel.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>The exported-places memory knows nothing about the businesses<span class="stop">.</span></dt>
+            <dd class="mono">
+              The index stores place identifiers and timestamps only — no names, no addresses —
+              capped at 50,000 with oldest-first eviction, and is inspectable, downloadable as CSV
+              and erasable from the options page.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>On a verification check, it steps aside<span class="stop">.</span></dt>
+            <dd class="mono">
+              On detecting a challenge the collector detaches its observers and the panel asks you to
+              solve the check yourself, then resume. No interaction with the check of any kind.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>Nothing you get today will be taken away<span class="stop">.</span></dt>
+            <dd class="mono">
+              No runtime date checks exist; any future tier change ships only as a human-published,
+              versioned release. A write-once install timestamp means installs predating any change
+              keep the free tier as it stood at install.
+            </dd>
+          </div>
+          <div class="promise reveal">
+            <dt>The file matches the screen, always<span class="stop">.</span></dt>
+            <dd class="mono">
+              Export writes exactly the filtered on-screen set. Distance is stamped at output time
+              against the centre the panel is showing, and the download is held open until Chrome
+              confirms completion, so the file is never truncated.
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- ============================================================ H · csv -->
+      <section class="section wrap" data-letter="H">
+        <header class="sec-head">
+          <span class="cellref mono">csv</span>
+          <h2 class="display">A file that opens clean<span class="stop">.</span></h2>
+        </header>
+
+        <p class="cols-legend mono">
+          <span class="cols-key cols-key-default">on by default · 11</span>
+          <span class="cols-key cols-key-optional">optional · 9</span>
+        </p>
+        <div class="scroll-x" tabindex="0" role="group" aria-label="The twenty columns, in canonical order">
+          <ol class="cols mono">
+            <li class="col-default">name</li>
+            <li class="col-default">category</li>
+            <li class="col-default">rating</li>
+            <li class="col-default">reviews</li>
+            <li class="col-default">phone</li>
+            <li class="col-default">website_status</li>
+            <li class="col-default">website_url</li>
+            <li>website_source</li>
+            <li class="col-default">address_line</li>
+            <li class="col-default">full_address</li>
+            <li>plus_code</li>
+            <li class="col-default">place_url</li>
+            <li>place_id</li>
+            <li>id_source</li>
+            <li>source_query</li>
+            <li class="col-default">distance_km</li>
+            <li>enrich_status</li>
+            <li>collected_at</li>
+            <li>enriched_at</li>
+            <li>data_level</li>
+          </ol>
+        </div>
+        <p class="body-copy">
+          Twenty columns, one fixed canonical order, whatever you tick — a lead sheet whose columns
+          move around between exports is worse than one with a fixed shape.
+        </p>
+
+        <div class="scroll-x" tabindex="0" role="group" aria-label="A sample of the file, annotated">
+          <div class="fileplate mono">
+            <p class="fileline">
+              <button class="fmark" type="button" data-pop="pop-f1" aria-label="About the byte-order mark, note 1">1</button>name,category,rating,reviews,phone,website_status,website_url,website_source,address_line,…<span class="crlf" aria-hidden="true">␍␊</span>
+            </p>
+            <p class="fileline">
+              "Harbour Dental Care",Dentist,4.7,156,<button class="fmark" type="button" data-pop="pop-f2" aria-label="About the leading apostrophe, note 2">2</button>'+44&nbsp;20&nbsp;7946&nbsp;0955,has,https://harbourdental.example,card,<button class="fmark" type="button" data-pop="pop-f3" aria-label="About quoted commas, note 3">3</button>"Unit&nbsp;2, Quay&nbsp;House, Harbour&nbsp;Rd",…<span class="crlf" aria-hidden="true">␍␊</span>
+            </p>
+            <p class="fileline">
+              "The Copper Kettle",Restaurant,4.4,<button class="fmark" type="button" data-pop="pop-f4" aria-label="About blank cells, note 4">4</button><span class="blank blank-file"></span>,,unknown,,,"14 Bridge St, Marlow",…<span class="crlf" aria-hidden="true">␍␊</span>
+            </p>
+          </div>
+        </div>
+        <ol class="fnotes mono">
+          <li><span class="pop-inline" id="pop-f1">The file starts with the UTF-8 byte-order mark, so Excel reads accented names without an import wizard.</span></li>
+          <li><span class="pop-inline" id="pop-f2">A phone starting with + would render as #NAME? in Excel. The leading apostrophe is deliberate — and any cell that could execute as a formula is neutralised the same way.</span></li>
+          <li><span class="pop-inline" id="pop-f3">Commas in addresses stay inside quotes, per RFC 4180. Lines end CRLF, per the same.</span></li>
+          <li><span class="pop-inline" id="pop-f4">Blank means Maps did not show it — never zero, never a guess.</span></li>
+        </ol>
+
+        <p class="closing-line mono">
+          Or press <em>Copy for a spreadsheet</em> — tab-separated, deliberately unquoted — and paste
+          the filtered rows straight into Sheets.
+        </p>
+      </section>
+
+      <!-- ============================================================ I · source_query -->
+      <section class="section section-locale wrap" data-letter="I">
+        <span class="margin-tick mono" aria-hidden="true">7JWVJ6J8+JM · DELHI</span>
+        <span class="margin-tick margin-tick-2 mono" aria-hidden="true">7JCJWRCM+QV · MUMBAI</span>
+
+        <header class="sec-head">
+          <span class="cellref mono">source_query</span>
+          <h2 class="display">Works in your Maps language<span class="stop">.</span></h2>
+        </header>
+
+        <div class="locale-pair" data-reveal-group>
+          <div class="locale-col reveal">
+            <div class="mcard mcard-static">
+              <p class="mcard-name">Sharma Sweet Shop</p>
+              <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.9 <span class="mcard-dim">(85)</span> · Sweet shop</p>
+              <p class="mcard-chips"><span class="mcard-chip">Directions</span></p>
+            </div>
+            <p class="locale-arrow" aria-hidden="true">↓</p>
+            <p class="locale-row mono">"Sharma Sweet Shop",Sweet shop,4.9,85,none,card</p>
+          </div>
+          <div class="locale-col reveal">
+            <div class="mcard mcard-static">
+              <p class="mcard-name devanagari">शर्मा मिठाई भंडार</p>
+              <p class="mcard-meta"><span class="mcard-stars">★★★★★</span> 4.9 <span class="mcard-dim">(85)</span> · <span class="devanagari">मिठाई की दुकान</span></p>
+              <p class="mcard-chips"><span class="mcard-chip devanagari">दिशा-निर्देश</span></p>
+            </div>
+            <p class="locale-arrow" aria-hidden="true">↓</p>
+            <p class="locale-row mono">"<span class="devanagari">शर्मा मिठाई भंडार</span>",<span class="devanagari">मिठाई की दुकान</span>,4.9,85,none,card</p>
+          </div>
+        </div>
+
+        <p class="body-copy">
+          Parsing anchors on structure and code values rather than English display text — the same
+          card, the same columns, the same file, whatever language your Maps is in. Numbers keep
+          their order across locales, which is what makes
+          <span class="devanagari">4.9 स्टार 85 समीक्षाएं</span> parse exactly like 4.9 stars, 85
+          reviews.
+        </p>
+      </section>
+
+      <!-- ============================================================ J · parse_health -->
+      <section class="section wrap" data-letter="J">
+        <header class="sec-head">
+          <span class="cellref mono">parse_health</span>
+          <h2 class="display">It stops rather than export rubbish<span class="stop">.</span></h2>
+        </header>
+
+        <div class="failloud">
+          <div class="panel-fac" id="panelFac" data-state="healthy">
+            <div class="fac-head">
+              <span class="fac-dot" aria-hidden="true"></span>
+              <span class="fac-status" data-healthy="Collecting as you browse" data-stopped="Maps layout changed">Collecting as you browse</span>
+              <span class="fac-count mono">128</span>
+            </div>
+            <div class="fac-bar" role="img" aria-label="Parse health, with the halt threshold marked at fifty per cent">
+              <span class="fac-fill"></span>
+              <span class="fac-mark"><i class="mono">50%</i></span>
+            </div>
+            <p class="fac-health mono" data-healthy="9 of 10 visible cards parsed" data-stopped="4 of 10 visible cards parsed" aria-live="polite">9 of 10 visible cards parsed</p>
+            <p class="fac-msg" aria-live="polite" data-healthy="" data-stopped="Layout moved. Collection stopped. Your 128 leads are untouched."></p>
+          </div>
+          <div class="failloud-side">
+            <button class="btn-ghost" type="button" id="breakBtn" aria-pressed="false">Google changes the layout</button>
+            <p class="body-copy">
+              If fewer than half of visible cards parse across two consecutive scans, collection
+              stops and the panel says the layout moved rather than quietly filling your sheet with
+              rubbish.
+            </p>
+          </div>
+        </div>
+
+        <p class="closing-line">Leads you have already collected are safe<span class="stop">.</span></p>
+      </section>
+
+      <!-- ============================================================ K · limits -->
+      <section class="section wrap" data-letter="K">
+        <header class="sec-head">
+          <span class="cellref mono">limits</span>
+          <h2 class="display">Limits, stated flatly<span class="stop">.</span></h2>
+        </header>
+
+        <table class="limits mono">
+          <tbody>
+            <tr class="reveal">
+              <td class="limits-num">2,000</td>
+              <td>rows per collection session. Export what you have, then clear the session to keep going.</td>
+            </tr>
+            <tr class="reveal">
+              <td class="limits-num">50,000</td>
+              <td>place ids in the exported-places memory, oldest evicted first.</td>
+            </tr>
+            <tr class="reveal">
+              <td class="limits-num">24</td>
+              <td>saved presets, names up to 60 characters.</td>
+            </tr>
+            <tr class="reveal">
+              <td class="limits-num">1</td>
+              <td>place opened per press. There is no other number.</td>
+            </tr>
+            <tr class="reveal">
+              <td class="limits-num">5&nbsp;s</td>
+              <td>before an unspent gesture expires and is refused.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="closing-line">Free during beta<span class="stop">.</span> Nothing you get today will be taken away<span class="stop">.</span></p>
+      </section>
+
+      <!-- ============================================================ L · footer -->
+      <footer class="footer wrap" data-letter="L">
+        <h2 class="display">One email, when it ships<span class="stop">.</span></h2>
+        <form class="waitlist" data-waitlist novalidate>
+          <div class="waitlist-row">
+            <label class="sr-only" for="wl-email-2">Email address</label>
+            <input
+              id="wl-email-2"
+              name="email"
+              type="email"
+              required
+              placeholder="you@studio.example"
+              autocomplete="email"
+            />
+            <button class="btn-ghost" type="submit">Get one email when it ships<span class="stop">.</span></button>
+          </div>
+          <p class="waitlist-note mono">No account. No list beyond that one email.</p>
+          <p class="waitlist-msg mono" role="status" aria-live="polite" hidden></p>
+        </form>
+
+        <p class="filename mono">maps-leads-plumbers-delhi-<span id="csvDate">2026-08-02</span>.csv</p>
+
+        <ul class="footer-lines mono">
+          <li>No account, no payment, no ads. Free during beta.<span class="crlf" aria-hidden="true">␍␊</span></li>
+          <li>No trackers, no analytics, no cookies on this page.<span class="crlf" aria-hidden="true">␍␊</span></li>
+          <li>No animation loops anywhere on this page, because no loop exists in the product.<span class="crlf" aria-hidden="true">␍␊</span></li>
+          <li>Collects only what you see. Never runs in the background. Nothing leaves your computer.<span class="crlf" aria-hidden="true">␍␊</span></li>
+        </ul>
+
+        <div class="footer-foot">
+          <p class="mono muted">by TheOpenBox</p>
+          <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark">
+            <svg class="icon-sun" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.3" />
+              <path
+                d="M8 1.2v1.8M8 13v1.8M1.2 8H3M13 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+              />
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <path
+                d="M13.2 9.8A5.6 5.6 0 0 1 6.2 2.8a5.6 5.6 0 1 0 7 7Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <p class="eof mono">— end of file · 214 rows</p>
+      </footer>
+    </main>
+
+    <script src="site.js"></script>
+  </body>
+</html>
