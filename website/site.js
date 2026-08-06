@@ -379,59 +379,73 @@
   var plot = doc.getElementById('radiusPlot');
   if (plot) {
     var svg = plot.querySelector('svg');
-    var dotsGroup = plot.querySelector('.plot-dots');
-    var ring = plot.querySelector('.ring-circle');
-    var ringLabel = plot.querySelector('.ring-label');
+    var ringCircle = doc.getElementById('ringCircle');
+    var ringFill = doc.getElementById('ringFill');
+    var ringLabel = doc.getElementById('ringLabel');
     var ringCount = doc.getElementById('ringCount');
-    var R = 78;
+    var ringKm = doc.getElementById('ringKm');
 
-    // A fixed scatter: no randomness at runtime, the same map every visit.
-    var DOTS = [
-      [150, 100], [185, 140], [120, 130], [170, 90], [140, 160], [200, 110],
-      [110, 95], [160, 175], [215, 150], [40, 40], [70, 190], [280, 60],
-      [260, 200], [30, 120], [90, 30], [250, 30], [300, 140], [60, 220],
-      [230, 220], [290, 220], [20, 200], [120, 20], [200, 20], [300, 90]
-    ];
+    // The map is authored in the markup so it survives with JS off. Here we
+    // only read the pins and drive the radius.
+    var CX = 180;
+    var CY = 128;
+    var R0 = 74; // the 5 km default, in viewBox units
+    var KM_PER_PX = 5 / R0;
+    var MIN_R = 30;
+    var MAX_R = 152;
 
-    var svgNS = 'http://www.w3.org/2000/svg';
-    var dotEls = DOTS.map(function (d) {
-      var c = doc.createElementNS(svgNS, 'circle');
-      c.setAttribute('cx', d[0]);
-      c.setAttribute('cy', d[1]);
-      c.setAttribute('r', 4);
-      dotsGroup.appendChild(c);
-      return c;
+    var pins = Array.prototype.slice.call(plot.querySelectorAll('.pin-dot')).map(function (el) {
+      return { el: el, x: parseFloat(el.getAttribute('cx')), y: parseFloat(el.getAttribute('cy')) };
     });
 
-    var setRing = function (cx, cy) {
-      ring.setAttribute('cx', cx);
-      ring.setAttribute('cy', cy);
-      ringLabel.setAttribute('x', cx);
-      ringLabel.setAttribute('y', Math.max(16, cy - R - 8));
+    var setRadius = function (R) {
+      R = Math.max(MIN_R, Math.min(MAX_R, R));
+      ringCircle.setAttribute('r', R);
+      if (ringFill) ringFill.setAttribute('r', R);
+      ringLabel.setAttribute('y', Math.max(14, CY - R - 8));
+      // Snap the reported distance to half-kilometres so it reads like a filter.
+      var km = Math.round(R * KM_PER_PX * 2) / 2;
+      ringLabel.textContent = km + ' km';
+      if (ringKm) ringKm.textContent = String(km);
       var inside = 0;
-      dotEls.forEach(function (el, i) {
-        var dx = DOTS[i][0] - cx;
-        var dy = DOTS[i][1] - cy;
+      pins.forEach(function (p) {
+        var dx = p.x - CX;
+        var dy = p.y - CY;
         var isIn = dx * dx + dy * dy <= R * R;
-        el.classList.toggle('in', isIn);
+        p.el.classList.toggle('in', isIn);
         if (isIn) inside += 1;
       });
       if (ringCount) ringCount.textContent = String(inside);
     };
 
-    setRing(160, 120);
+    setRadius(R0);
 
-    // The ring follows a fine pointer within the plot only; static on touch
-    // and under reduced motion.
+    // On a fine pointer the radius tracks how far the cursor is from the
+    // centre — you draw the ring out and watch the count change. Static on
+    // touch and under reduced motion.
     if (window.matchMedia('(pointer: fine)').matches && !reducedMotion) {
+      plot.classList.add('interactive');
+      var rectCache = null;
+      var refreshRect = function () {
+        rectCache = svg.getBoundingClientRect();
+      };
+      svg.addEventListener('pointerenter', refreshRect);
+      window.addEventListener('scroll', function () {
+        if (rectCache) refreshRect();
+      }, { passive: true });
+      window.addEventListener('resize', function () {
+        if (rectCache) refreshRect();
+      });
       svg.addEventListener('pointermove', function (ev) {
-        var rect = svg.getBoundingClientRect();
-        var x = ((ev.clientX - rect.left) / rect.width) * 320;
-        var y = ((ev.clientY - rect.top) / rect.height) * 240;
-        setRing(Math.min(280, Math.max(40, x)), Math.min(200, Math.max(40, y)));
+        if (!rectCache) refreshRect();
+        var x = ((ev.clientX - rectCache.left) / rectCache.width) * 360;
+        var y = ((ev.clientY - rectCache.top) / rectCache.height) * 260;
+        var dx = x - CX;
+        var dy = y - CY;
+        setRadius(Math.sqrt(dx * dx + dy * dy));
       });
       svg.addEventListener('pointerleave', function () {
-        setRing(160, 120);
+        setRadius(R0);
       });
     }
   }

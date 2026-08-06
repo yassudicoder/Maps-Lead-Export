@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy — Maps Lead Export</title>
+    <meta
+      name="description"
+      content="What Maps Lead Export does with your data: nothing leaves your computer. No account, no server, no tracking, no analytics. The full privacy policy for the extension."
+    />
+    <link rel="canonical" href="https://maps-lead-export.vercel.app/privacy" />
+    <meta property="og:title" content="Privacy — Maps Lead Export" />
+    <meta
+      property="og:description"
+      content="Nothing leaves your computer. No account, no server, no tracking. The full privacy policy for the Maps Lead Export extension."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://maps-lead-export.vercel.app/privacy" />
+    <meta property="og:image" content="https://maps-lead-export.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF9F6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121118" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Theme before first paint, so a stored choice never flashes. -->
+    <script>
+      (function () {
+        document.documentElement.classList.add("js");
+        try {
+          var t = localStorage.getItem("mle-theme");
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+
+    <link rel="preload" href="/fonts/fraunces-var.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="gutter" id="gutter" aria-hidden="true"></div>
+
+    <header class="masthead wrap">
+      <a class="masthead-brand" href="/" aria-label="Maps Lead Export — home">
+        <svg class="pin" viewBox="0 0 128 128" width="22" height="22" aria-hidden="true">
+          <defs>
+            <linearGradient id="ping" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6A63F6" />
+              <stop offset="1" stop-color="#4338CA" />
+            </linearGradient>
+          </defs>
+          <rect width="128" height="128" rx="30" fill="url(#ping)" />
+          <path
+            fill="#fff"
+            fill-rule="evenodd"
+            d="M64 22c-17.7 0-32 13.6-32 30.4 0 13.1 8.6 24.8 17.9 34.9L64 103l14.1-15.7C87.4 77.2 96 65.5 96 52.4 96 35.6 81.7 22 64 22Zm0 42a12 12 0 1 1 0-24 12 12 0 0 1 0 24Z"
+          />
+        </svg>
+        <span class="masthead-name mono">maps_lead_export</span>
+      </a>
+      <p class="masthead-side">
+        <span class="mono muted">by TheOpenBox</span>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark">
+          <svg class="icon-sun" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.3" />
+            <path
+              d="M8 1.2v1.8M8 13v1.8M1.2 8H3M13 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+            />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <path
+              d="M13.2 9.8A5.6 5.6 0 0 1 6.2 2.8a5.6 5.6 0 1 0 7 7Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </p>
+    </header>
+
+    <main id="main">
+      <!-- ============================================================ A · header -->
+      <section class="section doc-head wrap" data-letter="A">
+        <p class="kicker mono">Privacy policy · the extension</p>
+        <h1 class="display doc-title">Nothing leaves your computer<span class="stop">.</span></h1>
+        <p class="updated mono">Last updated 6 August 2026 · Maps Lead Export by TheOpenBox</p>
+        <p class="doc-lede">
+          Maps Lead Export turns the businesses Google Maps has already drawn in the tab you are
+          looking at into a CSV you download. It keeps everything on your computer, has no account
+          and no server, and makes no network requests of its own. This page explains that in full.
+        </p>
+      </section>
+
+      <!-- ============================================================ B · in_short -->
+      <section class="section wrap" data-letter="B">
+        <header class="sec-head">
+          <span class="cellref mono">in_short</span>
+          <h2 class="display">The short version<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">
+          Every business the panel collects comes from what Google Maps has already rendered in the
+          tab you are looking at, while you browse. The extension never runs in the background and
+          never opens places on its own.
+        </p>
+        <p class="body-copy">
+          What it collects is written to your browser&rsquo;s own storage and stays there until you
+          export it to a file yourself. It has no account to sign into, no server to talk to, and it
+          sends nothing anywhere. It does not track you, show ads, or sell or share your data —
+          because there is nowhere for that data to go.
+        </p>
+      </section>
+
+      <!-- ============================================================ C · stored -->
+      <section class="section wrap" data-letter="C">
+        <header class="sec-head">
+          <span class="cellref mono">chrome.storage.local</span>
+          <h2 class="display">What it keeps, and where<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">
+          Everything the extension keeps lives in your browser, on your own machine:
+        </p>
+        <ul class="points">
+          <li>the current collection session — up to 2,000 businesses you have browsed past;</li>
+          <li>your saved filter presets — up to 24, holding filter values only, with no rows and no place data;</li>
+          <li>your export column choices;</li>
+          <li>the exported-places index — a record of which places you have already exported, so a business is never put in front of you twice.</li>
+        </ul>
+        <p class="body-copy">
+          The exported-places index stores place identifiers and dates only — no names, no addresses,
+          nothing about the business itself. It is capped at 50,000 places, the oldest dropped first,
+          and you can inspect it, download it as a CSV, or press <em>Forget everything</em> to clear
+          it, all from the options page. None of this is ever transmitted.
+        </p>
+      </section>
+
+      <!-- ============================================================ D · leaves -->
+      <section class="section wrap" data-letter="D">
+        <header class="sec-head">
+          <span class="cellref mono">egress</span>
+          <h2 class="display">What ever leaves your computer<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">Two things, and only when you ask for them:</p>
+        <ul class="points">
+          <li>the CSV file you export, which Chrome saves to your own Downloads folder;</li>
+          <li>the diagnostics you copy, which go to your own clipboard.</li>
+        </ul>
+        <p class="body-copy">
+          Nothing else leaves the machine. There is no code in the extension that sends data to any
+          server — it makes no network requests of its own.
+        </p>
+      </section>
+
+      <!-- ============================================================ E · permissions -->
+      <section class="section wrap" data-letter="E">
+        <header class="sec-head">
+          <span class="cellref mono">permissions</span>
+          <h2 class="display">Every permission, and why<span class="stop">.</span></h2>
+        </header>
+        <table class="perms">
+          <caption class="sr-only">Each Chrome permission the extension requests, and what it is for.</caption>
+          <tbody>
+            <tr>
+              <th scope="row">activeTab</th>
+              <td>
+                Lets the panel read the Google Maps tab you are on — but only that tab, and only
+                after you open the panel from the toolbar. It cannot see your other tabs.
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">scripting</th>
+              <td>Runs the reader that takes the results already drawn on that Maps tab.</td>
+            </tr>
+            <tr>
+              <th scope="row">storage</th>
+              <td>
+                Keeps your session, presets, column choices and exported-places index on your own
+                computer.
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">downloads</th>
+              <td>Saves the CSV you export to your Downloads folder.</td>
+            </tr>
+            <tr>
+              <th scope="row">sidePanel</th>
+              <td>Shows the panel beside Google Maps.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="body-copy">
+          The extension asks for no host permissions, so it cannot run on websites at large, and it
+          never visits third-party sites.
+        </p>
+      </section>
+
+      <!-- ============================================================ F · never -->
+      <section class="section wrap" data-letter="F">
+        <header class="sec-head">
+          <span class="cellref mono">never</span>
+          <h2 class="display">What it never does<span class="stop">.</span></h2>
+        </header>
+        <ul class="points">
+          <li>Run in the background, or collect anything while you are not looking at Google Maps.</li>
+          <li>Open places or move the page on its own — every action follows a fresh click of yours.</li>
+          <li>Read anything outside the Maps tab you are on, or visit third-party websites.</li>
+          <li>Collect email addresses or contact details the page does not already show.</li>
+          <li>Interact with a verification check — if Google shows one, it steps aside and asks you to solve it.</li>
+          <li>Show ads, require an account, or take payment.</li>
+          <li>Sell, share, or transmit what you collect. It has nowhere to send it.</li>
+        </ul>
+      </section>
+
+      <!-- ============================================================ G · analytics -->
+      <section class="section wrap" data-letter="G">
+        <header class="sec-head">
+          <span class="cellref mono">analytics</span>
+          <h2 class="display">Usage analytics<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">
+          Today the extension collects no usage analytics and sends nothing anywhere. If an optional
+          analytics signal is ever added, it will be opt-in and off by default, and could only ever
+          report anonymous feature counts — how often a feature was used — never the businesses you
+          collect, your searches, or anything that could identify you or them.
+        </p>
+      </section>
+
+      <!-- ============================================================ H · controls -->
+      <section class="section wrap" data-letter="H">
+        <header class="sec-head">
+          <span class="cellref mono">your_controls</span>
+          <h2 class="display">What you control<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">
+          Your collected leads, presets and the exported-places index are yours to clear at any
+          time: <em>Clear session</em> empties the current session, and <em>Forget everything</em> on
+          the options page erases the exported-places index. Removing the extension removes all of
+          it. Because none of it ever left your computer, there is nothing held anywhere else to
+          delete.
+        </p>
+      </section>
+
+      <!-- ============================================================ I · changes -->
+      <section class="section wrap" data-letter="I">
+        <header class="sec-head">
+          <span class="cellref mono">changes</span>
+          <h2 class="display">Changes to this policy<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">
+          If this policy changes, the date at the top changes with it. Anything that materially
+          changes what the extension does with your data ships as a versioned update you choose to
+          install — never as a silent change on a machine you have not touched.
+        </p>
+      </section>
+
+      <!-- ============================================================ J · contact -->
+      <section class="section wrap" data-letter="J">
+        <header class="sec-head">
+          <span class="cellref mono">contact</span>
+          <h2 class="display">Contact<span class="stop">.</span></h2>
+        </header>
+        <p class="body-copy">
+          Maps Lead Export is made by TheOpenBox. Questions about privacy go to
+          <a href="mailto:boxai5115@gmail.com">boxai5115@gmail.com</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer wrap" data-letter="K">
+      <ul class="footer-lines mono">
+        <li>No account, no payment, no ads. Free during beta.<span class="crlf" aria-hidden="true">␍␊</span></li>
+        <li>No trackers, no analytics, no cookies on this page.<span class="crlf" aria-hidden="true">␍␊</span></li>
+        <li>Collects only what you see. Never runs in the background. Nothing leaves your computer.<span class="crlf" aria-hidden="true">␍␊</span></li>
+      </ul>
+
+      <nav class="footer-nav mono" aria-label="Site">
+        <a href="/">Home</a>
+        <span aria-current="page">Privacy</span>
+      </nav>
+
+      <div class="footer-foot">
+        <p class="mono muted">by TheOpenBox</p>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark">
+          <svg class="icon-sun" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.3" />
+            <path
+              d="M8 1.2v1.8M8 13v1.8M1.2 8H3M13 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+            />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <path
+              d="M13.2 9.8A5.6 5.6 0 0 1 6.2 2.8a5.6 5.6 0 1 0 7 7Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <p class="eof mono">— end of file</p>
+    </footer>
+
+    <script src="/site.js"></script>
+  </body>
+</html>

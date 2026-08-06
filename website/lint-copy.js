@@ -17,6 +17,7 @@ const path = require('path');
 
 const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
 const HTML = read('index.html');
+const PRIVACY = read('privacy/index.html');
 const SITE_JS = read('site.js');
 const STYLES = read('styles.css');
 const SELF = read('lint-copy.js');
@@ -39,12 +40,12 @@ function visibleText(html) {
 /* The non-visible corpus: HTML comments, inline script bodies, and the two
    shipped code files whole (their string literals are user-facing anyway). */
 function codeCorpus() {
-  const comments = (HTML.match(/<!--[\s\S]*?-->/g) || []).join('\n');
-  const scripts = (HTML.match(/<script[\s\S]*?<\/script>/gi) || []).join('\n');
+  const html = HTML + '\n' + PRIVACY;
+  const comments = (html.match(/<!--[\s\S]*?-->/g) || []).join('\n');
+  const scripts = (html.match(/<script[\s\S]*?<\/script>/gi) || []).join('\n');
   return [comments, scripts, SITE_JS, STYLES].join('\n');
 }
 
-const text = visibleText(HTML);
 const failures = [];
 
 /* Red line 6 vocabulary, plus the claims the brief forbids. */
@@ -68,20 +69,26 @@ const FORBIDDEN = [
   /\bsupercharged?\b/i
 ];
 
-for (const re of FORBIDDEN) {
-  const hit = text.match(re);
-  if (hit) failures.push(`forbidden vocabulary: "${hit[0]}" (${re})`);
+/* Every page's visible copy is held to the vocabulary and voice rules. */
+function checkVisible(label, html) {
+  const text = visibleText(html);
+  for (const re of FORBIDDEN) {
+    const hit = text.match(re);
+    if (hit) failures.push(`${label}: forbidden vocabulary "${hit[0]}" (${re})`);
+  }
+  const we = text.match(/\b(?:we|our|us)\b/i);
+  if (we) failures.push(`${label}: first-person plural "${we[0]}"`);
+  if (/!/.test(text.replace(/#NAME\?/g, ''))) failures.push(`${label}: exclamation mark in copy`);
 }
 
-/* Voice: the product speaks in third person and never exclaims. */
-const WE = text.match(/\b(?:we|our|us)\b/i);
-if (WE) failures.push(`first-person plural: "${WE[0]}"`);
-if (/!/.test(text.replace(/#NAME\?/g, ''))) failures.push('exclamation mark in copy');
+checkVisible('index.html', HTML);
+checkVisible('privacy/index.html', PRIVACY);
 
-/* The words the site must contain. */
+/* The homepage must contain these — the privacy page need not. */
+const indexText = visibleText(HTML);
 const REQUIRED = ['Export what you see', 'Free during beta', 'Nothing leaves your computer'];
 for (const phrase of REQUIRED) {
-  if (!text.includes(phrase)) failures.push(`missing required phrase: "${phrase}"`);
+  if (!indexText.includes(phrase)) failures.push(`index.html: missing required phrase "${phrase}"`);
 }
 
 /* Red-line vocabulary is banned from comments and code too. */

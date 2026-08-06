@@ -1148,25 +1148,84 @@ html:not(.js) .ftoken {
   height: auto;
 }
 
-.plot-dots circle {
-  fill: var(--ink-muted);
-  opacity: 0.45;
-  transition: fill 150ms ease-out, opacity 150ms ease-out;
+.radius-plot.interactive {
+  cursor: crosshair;
 }
 
-.plot-dots circle.in {
-  fill: var(--amber);
-  opacity: 1;
+/* The street network. Every colour derives from --ink/--accent, so the map
+   re-inks itself in dark mode with the rest of the page. */
+.street {
+  stroke: color-mix(in srgb, var(--ink) 13%, transparent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.artery {
+  stroke: color-mix(in srgb, var(--ink) 22%, transparent);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.map-park {
+  fill: color-mix(in srgb, var(--ink) 7%, transparent);
+  stroke: color-mix(in srgb, var(--ink) 11%, transparent);
+  stroke-width: 1;
+}
+
+.map-tree {
+  fill: color-mix(in srgb, var(--ink) 24%, transparent);
+}
+
+/* The radius, its filled area, and the search centre. */
+.ring-fill {
+  fill: color-mix(in srgb, var(--accent) 9%, transparent);
+  stroke: none;
 }
 
 .ring-circle {
   stroke: var(--accent);
-  stroke-width: 1.5;
+  stroke-width: 1.6;
 }
 
 .ring-label {
   font-size: 12px;
   fill: var(--accent);
+}
+
+.centre-halo {
+  fill: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.centre-dot {
+  fill: var(--accent);
+}
+
+/* Collected businesses. Inside the ring they light amber — the prospects
+   the radius keeps; outside, muted and dropped. A paper-coloured halo lifts
+   each pin off the roads it sits on. */
+.pin-dot {
+  fill: var(--ink-muted);
+  opacity: 0.5;
+  stroke: var(--paper-raised);
+  stroke-width: 1;
+  transition: fill 150ms ease-out, opacity 150ms ease-out, r 150ms ease-out;
+}
+
+.pin-dot.in {
+  fill: var(--amber);
+  opacity: 1;
+  r: 4.4;
+}
+
+.plot-hint {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .plot-hint {
+    display: inline;
+  }
 }
 
 .radius-plot figcaption {
@@ -1823,6 +1882,120 @@ kbd {
   opacity: 0.7;
   margin-top: clamp(48px, 8vh, 80px);
   letter-spacing: 0.04em;
+}
+
+/* ---------------------------------------------------------- privacy page */
+
+.doc-head {
+  border-top: none;
+  padding-top: clamp(36px, 7vh, 72px);
+}
+
+.doc-title {
+  max-width: 18ch;
+}
+
+.updated {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 16px;
+}
+
+.doc-lede {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(1.1rem, 2.3vw, 1.45rem);
+  line-height: 1.5;
+  max-width: 46ch;
+  margin-top: clamp(20px, 4vh, 34px);
+}
+
+/* Ledger-tick bullets: small indigo squares, echoing the site's chips. */
+.points {
+  max-width: 64ch;
+  margin-top: 22px;
+  display: grid;
+  gap: 13px;
+}
+
+.points li {
+  position: relative;
+  padding-left: 24px;
+  line-height: 1.55;
+}
+
+.points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--accent);
+  border-radius: 2px;
+}
+
+/* Permission specimen table: mono term, prose reason. */
+.perms {
+  width: 100%;
+  max-width: 760px;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.perms th {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--accent);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+  padding: 16px 24px 16px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.perms td {
+  color: var(--ink-muted);
+  line-height: 1.55;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.footer-nav {
+  display: flex;
+  gap: 20px;
+  font-size: 12.5px;
+  margin-top: 26px;
+}
+
+.footer-nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 2px;
+}
+
+.footer-nav a:hover {
+  color: var(--ink);
+}
+
+.footer-nav [aria-current='page'] {
+  color: var(--ink);
+}
+
+@media (max-width: 559px) {
+  .perms th {
+    display: block;
+    padding-bottom: 4px;
+    border-bottom: none;
+  }
+
+  .perms td {
+    display: block;
+    padding-top: 4px;
+  }
 }
 
 /* ------------------------------------------------------------------ print */
