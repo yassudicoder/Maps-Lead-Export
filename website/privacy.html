@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Maps Lead Export</title>
+    <meta
+      name="description"
+      content="What Maps Lead Export collects, which is nothing. The extension holds no host permissions, so Chrome will not let it contact a server."
+    />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF9F6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121118" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+    <!-- Theme before first paint, so a stored choice never flashes. -->
+    <script>
+      (function () {
+        document.documentElement.classList.add("js");
+        try {
+          var stored = localStorage.getItem("tob-theme");
+          if (stored === "light" || stored === "dark") {
+            document.documentElement.setAttribute("data-theme", stored);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Long-form legal text. Narrower measure than the landing page, which is
+         built for display type rather than paragraphs you actually read. */
+      .policy {
+        max-width: 68ch;
+        padding-block: clamp(3rem, 8vw, 6rem);
+      }
+      .policy h1 {
+        margin-bottom: 0.4em;
+      }
+      .policy .updated {
+        margin-top: 0;
+        opacity: 0.7;
+      }
+      .policy h2 {
+        margin-top: 2.4em;
+        margin-bottom: 0.5em;
+      }
+      .policy h3 {
+        margin-top: 1.8em;
+        margin-bottom: 0.4em;
+        font-size: 1.05rem;
+      }
+      .policy p,
+      .policy li {
+        line-height: 1.65;
+        text-wrap: pretty;
+      }
+      .policy ul {
+        padding-left: 1.15em;
+      }
+      .policy li {
+        margin-block: 0.45em;
+      }
+      .policy .lede {
+        font-size: 1.08rem;
+      }
+      /* The claim the whole page rests on deserves to look load-bearing. */
+      .policy .claim {
+        margin: 1.6em 0;
+        padding: 1.1em 1.3em;
+        border-left: 3px solid currentColor;
+        opacity: 0.95;
+      }
+      .policy .claim p:first-child {
+        margin-top: 0;
+      }
+      .policy .claim p:last-child {
+        margin-bottom: 0;
+      }
+      .policy .back {
+        display: inline-block;
+        margin-bottom: 2.5rem;
+      }
+      /* Deliberately loud. This page cannot go live with a placeholder contact
+         in it, so the placeholder is made impossible to scroll past. */
+      .policy .todo {
+        padding: 0.9em 1.1em;
+        border: 2px dashed #c2410c;
+        color: #c2410c;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="policy wrap">
+      <a class="back mono" href="./">&larr; Maps Lead Export</a>
+
+      <h1 class="display">Privacy Policy<span class="stop">.</span></h1>
+      <p class="updated mono">Last updated 2 August 2026</p>
+
+      <p class="lede">
+        Maps Lead Export is a Chrome extension published by TheOpenBox. This
+        policy covers two separate things — the extension, and this website.
+        They behave differently, so they are described separately.
+      </p>
+
+      <h2>The extension</h2>
+
+      <div class="claim">
+        <p><strong>It collects nothing, sends nothing, and has no account.</strong></p>
+        <p>
+          That is not a statement about our intentions. It is a property of how
+          the extension is built, and you can check it yourself without taking
+          our word for any of it.
+        </p>
+      </div>
+
+      <ul>
+        <li>
+          The extension requests <strong>no host permissions</strong>. Chrome
+          will not permit it to contact any website or server. You can confirm
+          this in the Permissions section of its Chrome Web Store listing.
+        </li>
+        <li>It contains no analytics, no tracking, no telemetry, and no login.</li>
+        <li>
+          The business listings it collects are stored on your own computer, in
+          Chrome's local extension storage. They are never uploaded.
+        </li>
+        <li>
+          Exported CSV files are written straight to your device by Chrome's own
+          download mechanism.
+        </li>
+        <li>
+          Nothing is synchronised to your Google account or shared between your
+          devices.
+        </li>
+      </ul>
+
+      <h3>What it reads, and when</h3>
+      <p>
+        The extension reads business listings that Google Maps has already
+        displayed in your own browser tab — name, category, rating, review
+        count, address, and whether the listing shows a website. When you open a
+        place yourself, it also reads that place's public contact details.
+      </p>
+      <p>
+        It runs only after you click its toolbar icon on a Google Maps tab. It
+        does not run in the background, does not open pages on its own, and does
+        not visit any third-party website.
+      </p>
+      <p>
+        All of that is public business information shown on Google Maps. The
+        extension does not read your browsing history, your Google account, your
+        personal data, or any other website.
+      </p>
+
+      <h3>Deleting it</h3>
+      <p>
+        Clear the session from the panel, clear the exported-place index from the
+        options page, or uninstall the extension, which removes its local storage
+        entirely. Because nothing was ever sent anywhere, there is nothing to
+        request from us.
+      </p>
+
+      <h2>This website</h2>
+      <p>
+        <strong>The waitlist form is not currently active.</strong> Submitting it
+        stores nothing and sends nothing; it replies that we are not taking names
+        yet. At present this website collects no personal information at all.
+      </p>
+      <p>
+        When the form is switched on, the only thing collected will be the email
+        address you type, used for one purpose: to send you a single email when
+        the extension is released. It will not be sold, rented, or shared, and it
+        will not be added to any other list. This policy will be updated to name
+        the service that stores it <em>before</em> the form starts accepting
+        addresses, not afterwards.
+      </p>
+      <p>This website sets no advertising or tracking cookies.</p>
+
+      <h2>Changes</h2>
+      <p>
+        If any of this changes — for example if optional usage statistics are
+        added — this policy will be updated before the change ships. Anything of
+        that kind will be off by default, and will never include the business
+        listings you collect.
+      </p>
+
+      <h2>Contact</h2>
+      <!--
+        FILL BEFORE PUBLISHING. There is no contact address anywhere on this
+        site, so there was none to use here. A plausible-looking invented one is
+        worse than an obvious gap: it would sit in a legal document promising a
+        route that bounces. Replace both the href and the text, then delete this
+        comment and the .todo styling below.
+      -->
+      <p class="todo">
+        Questions about this policy, or a request to delete anything, go to
+        <a href="mailto:CONTACT@EXAMPLE.INVALID">⟨ADD CONTACT EMAIL⟩</a>.
+      </p>
+      <p class="mono" style="opacity: 0.7">
+        Maps Lead Export is made by TheOpenBox.
+      </p>
+    </main>
+
+    <script src="site.js" defer></script>
+  </body>
+</html>

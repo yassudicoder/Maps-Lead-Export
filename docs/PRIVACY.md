@@ -1,14 +1,23 @@
-# Privacy Policy — Maps Lead Export by TheOpenBox
+# Privacy Policy — notes and store-listing answers
 
-**Draft for publication. Two placeholders marked `⟨FILL⟩` must be completed
-before this goes live — they are facts only Yash knows.**
+**The policy itself is now a real page: [`website/privacy.html`](../website/privacy.html).**
+It deploys with the site to `https://maps-lead-export.vercel.app/privacy`, which
+is the URL the Chrome Web Store field wants.
 
-Publish at a stable URL (e.g. `https://maps-lead-export.vercel.app/privacy`) and
-paste that URL into the Chrome Web Store's Privacy policy field.
+**One blocker remains in that page:** the contact address. There is no contact
+email anywhere on the site, so there was none to use. It is marked with a loud
+dashed box that is impossible to scroll past, and the page must not go live
+until it is replaced.
+
+The prose below is kept as the source text. The section on the website was
+corrected after reading `website/site.js`: `WAITLIST_ENDPOINT` is an empty
+string, so the form posts nothing and replies "Not taking names quite yet."
+The site therefore collects **nothing at all** today, and saying otherwise would
+have been inaccurate in the direction people never check.
 
 ---
 
-Last updated: ⟨FILL: date of publication⟩
+Last updated: 2 August 2026
 
 Maps Lead Export is a Chrome extension published by TheOpenBox. This policy
 covers two separate things: **the extension**, and **this website**. They behave
@@ -55,21 +64,22 @@ request from us.
 
 ## This website
 
-If you enter your email address in the "get one email when it ships" form, we
-store that address for one purpose: **to send you a single email when the
-extension is released.**
+**The waitlist form is not currently active.** Submitting it stores nothing and
+sends nothing; it replies that we are not taking names yet. At present this
+website collects no personal information at all.
 
-- Provided to: ⟨FILL: the service that receives and stores the address — e.g.
-  the hosting provider's database, or the named email service. Do not publish
-  this until it is confirmed; naming the wrong processor is worse than naming
-  none.⟩
-- We do not sell, rent, or share it.
-- We do not add you to any other list. As the site says: no list beyond that one
-  email.
-- To be removed at any time, contact us at the address below and the record is
-  deleted.
+When the form is switched on, the only thing collected will be the email address
+you type, used for one purpose: to send you a single email when the extension is
+released. It will not be sold, rented, or shared, and it will not be added to
+any other list. This policy will be updated to name the service that stores it
+**before** the form starts accepting addresses, not afterwards.
 
-The website itself sets no advertising or tracking cookies.
+This website sets no advertising or tracking cookies.
+
+> **Wiring the form is therefore a privacy-policy event, not just a code
+> change.** Setting `WAITLIST_ENDPOINT` in `website/site.js` turns a page that
+> collects nothing into a page that collects an email address. Update this
+> policy in the same commit.
 
 ## Changes
 
