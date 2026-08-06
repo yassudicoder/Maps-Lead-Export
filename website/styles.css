@@ -1148,25 +1148,84 @@ html:not(.js) .ftoken {
   height: auto;
 }
 
-.plot-dots circle {
-  fill: var(--ink-muted);
-  opacity: 0.45;
-  transition: fill 150ms ease-out, opacity 150ms ease-out;
+.radius-plot.interactive {
+  cursor: crosshair;
 }
 
-.plot-dots circle.in {
-  fill: var(--amber);
-  opacity: 1;
+/* The street network. Every colour derives from --ink/--accent, so the map
+   re-inks itself in dark mode with the rest of the page. */
+.street {
+  stroke: color-mix(in srgb, var(--ink) 13%, transparent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.artery {
+  stroke: color-mix(in srgb, var(--ink) 22%, transparent);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.map-park {
+  fill: color-mix(in srgb, var(--ink) 7%, transparent);
+  stroke: color-mix(in srgb, var(--ink) 11%, transparent);
+  stroke-width: 1;
+}
+
+.map-tree {
+  fill: color-mix(in srgb, var(--ink) 24%, transparent);
+}
+
+/* The radius, its filled area, and the search centre. */
+.ring-fill {
+  fill: color-mix(in srgb, var(--accent) 9%, transparent);
+  stroke: none;
 }
 
 .ring-circle {
   stroke: var(--accent);
-  stroke-width: 1.5;
+  stroke-width: 1.6;
 }
 
 .ring-label {
   font-size: 12px;
   fill: var(--accent);
+}
+
+.centre-halo {
+  fill: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.centre-dot {
+  fill: var(--accent);
+}
+
+/* Collected businesses. Inside the ring they light amber — the prospects
+   the radius keeps; outside, muted and dropped. A paper-coloured halo lifts
+   each pin off the roads it sits on. */
+.pin-dot {
+  fill: var(--ink-muted);
+  opacity: 0.5;
+  stroke: var(--paper-raised);
+  stroke-width: 1;
+  transition: fill 150ms ease-out, opacity 150ms ease-out, r 150ms ease-out;
+}
+
+.pin-dot.in {
+  fill: var(--amber);
+  opacity: 1;
+  r: 4.4;
+}
+
+.plot-hint {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .plot-hint {
+    display: inline;
+  }
 }
 
 .radius-plot figcaption {
