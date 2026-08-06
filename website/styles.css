@@ -1884,6 +1884,120 @@ kbd {
   letter-spacing: 0.04em;
 }
 
+/* ---------------------------------------------------------- privacy page */
+
+.doc-head {
+  border-top: none;
+  padding-top: clamp(36px, 7vh, 72px);
+}
+
+.doc-title {
+  max-width: 18ch;
+}
+
+.updated {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 16px;
+}
+
+.doc-lede {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(1.1rem, 2.3vw, 1.45rem);
+  line-height: 1.5;
+  max-width: 46ch;
+  margin-top: clamp(20px, 4vh, 34px);
+}
+
+/* Ledger-tick bullets: small indigo squares, echoing the site's chips. */
+.points {
+  max-width: 64ch;
+  margin-top: 22px;
+  display: grid;
+  gap: 13px;
+}
+
+.points li {
+  position: relative;
+  padding-left: 24px;
+  line-height: 1.55;
+}
+
+.points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--accent);
+  border-radius: 2px;
+}
+
+/* Permission specimen table: mono term, prose reason. */
+.perms {
+  width: 100%;
+  max-width: 760px;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.perms th {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--accent);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+  padding: 16px 24px 16px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.perms td {
+  color: var(--ink-muted);
+  line-height: 1.55;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.footer-nav {
+  display: flex;
+  gap: 20px;
+  font-size: 12.5px;
+  margin-top: 26px;
+}
+
+.footer-nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 2px;
+}
+
+.footer-nav a:hover {
+  color: var(--ink);
+}
+
+.footer-nav [aria-current='page'] {
+  color: var(--ink);
+}
+
+@media (max-width: 559px) {
+  .perms th {
+    display: block;
+    padding-bottom: 4px;
+    border-bottom: none;
+  }
+
+  .perms td {
+    display: block;
+    padding-top: 4px;
+  }
+}
+
 /* ------------------------------------------------------------------ print */
 
 @media print {
